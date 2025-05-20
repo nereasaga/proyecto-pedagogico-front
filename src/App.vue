@@ -4,7 +4,7 @@ import Calendar from './components/Calendar.vue'
 </script>
 
 <template>
-
+  <router-view />
   <Calendar />
 </template>
 
