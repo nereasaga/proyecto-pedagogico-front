@@ -1,47 +1,103 @@
+// src/stores/auth.ts
 import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 
-export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    token: localStorage.getItem('token') || null,
-    rol: localStorage.getItem('rol') || null,
-  }),
+export const useAuthStore = defineStore('auth', () => {
+  /* ---------------- estado reactivo ---------------- */
+  const token = ref<string | null>(localStorage.getItem('token'))
+  const role  = ref<string | null>(localStorage.getItem('rol'))
+  const user  = ref<{ name?: string; email?: string; role?: string } | null>(null)
 
-  actions: {
-    async login(email, password) {
-      try {
-        const res = await axios.post('http://localhost:5000/auth/login', {
-          email,
-          password,
-        })
+  /* -------------- helpers internos ----------------- */
+  const router = useRouter()
 
-        this.token = res.data.access_token
-        this.rol = res.data.rol
+  /** Añade o elimina el header Authorization global de axios */
+  const setAuthHeader = (jwt: string | null) => {
+    if (jwt) axios.defaults.headers.common.Authorization = `Bearer ${jwt}`
+    else      delete axios.defaults.headers.common.Authorization
+  }
 
-        // Guarda en localStorage
-        localStorage.setItem('token', this.token)
-        localStorage.setItem('rol', this.rol)
+  // Si recargamos la página y hay token en localStorage:
+  if (token.value) setAuthHeader(token.value)
 
-        // Añade el token a los headers para futuras peticiones
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`
+  /* ------------------- acciones -------------------- */
+  /** Login real contra tu API Flask */
+  const apiLogin = async (email: string, password: string) => {
+    try {
+      const { data } = await axios.post('http://localhost:5000/auth/login', {
+        email,
+        password,
+      })
 
-        return true
-      } catch (error) {
-        console.error('Login fallido:', error.response?.data?.msg || error.message)
-        return false
-      }
-    },
+      // estado
+      token.value = data.access_token
+      role.value  = data.rol
+      user.value  = { email, role: data.rol }
 
-    logout() {
-      this.token = null
-      this.rol = null
-      localStorage.removeItem('token')
-      localStorage.removeItem('rol')
-      delete axios.defaults.headers.common['Authorization']
-    },
+      // persistencia + headers
+      localStorage.setItem('token', token.value)
+      localStorage.setItem('rol', role.value)
+      setAuthHeader(token.value)
 
-    isAuthenticated() {
-      return !!this.token
-    },
-  },
+      // navegación
+      await router.push('/panel')
+      return true
+    } catch (err: any) {
+      console.error('Login fallido:', err.response?.data?.msg || err.message)
+      return false
+    }
+  }
+
+  /** Login simulado (para desarrollos offline o demos) */
+  const mockLogin = (email: string, password: string) => {
+    if (email === 'admin@admin.com' && password === 'admin123') {
+      role.value = 'admin'
+      user.value = { name: 'Administrador', email, role: 'admin' }
+    } else if (email && password) {
+      role.value = 'user'
+      user.value = { name: 'Usuario normal', email, role: 'user' }
+    } else {
+      alert('Credenciales inválidas')
+      return
+    }
+
+    // token falso para que la app funcione igual
+    token.value = 'mock-token'
+    localStorage.setItem('token', token.value)
+    localStorage.setItem('rol', role.value)
+    setAuthHeader(null)            // no mandamos token a la API
+
+    router.push('/panel')
+  }
+
+  /** Cierre de sesión (sirve para ambos modos) */
+  const logout = () => {
+    token.value = null
+    role.value  = null
+    user.value  = null
+    localStorage.removeItem('token')
+    localStorage.removeItem('rol')
+    setAuthHeader(null)
+    router.push('/')
+  }
+
+  const isAuthenticated = computed(() => !!token.value)
+
+  /* ----------------- interface pública -------------- */
+  return {
+    // estado
+    token,
+    role,
+    user,
+
+    // acciones
+    apiLogin,
+    mockLogin,
+    logout,
+
+    // getters
+    isAuthenticated,
+  }
 })

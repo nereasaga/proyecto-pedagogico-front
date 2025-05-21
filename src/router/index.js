@@ -1,6 +1,10 @@
 import { useAuthStore } from '@/stores/auth'
 import { createRouter, createWebHistory } from 'vue-router'
 
+import Login from '../views/Login.vue'
+import Panel from '../views/Panel.vue'
+import Register from '../views/Register.vue'
+
 const routes = [
   {
     path: '/dashboard',
@@ -12,6 +16,9 @@ const routes = [
     component: () => import('@/views/WorkerDash.vue'),
     meta: { requiresAuth: true, roles: ['worker'] }
   },
+  { path: '/', name: 'Login', component: Login },
+  { path: '/panel', name: 'Panel', component: Panel },
+  { path: '/register', name: 'Register', component: Register }
 //   {
 //     path: '/login',
 //     component: () => import('@/views/Login.vue')
@@ -34,5 +41,8 @@ router.beforeEach((to, from, next) => {
     next()
   }
 })
+
+
+
 
 export default router
