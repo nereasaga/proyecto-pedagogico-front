@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Panel from '../views/Panel.vue'
 import Register from '../views/Register.vue'
+import Home from '../views/Home.vue'
 
 const routes = [
   {
@@ -16,7 +17,8 @@ const routes = [
     component: () => import('@/views/WorkerDash.vue'),
     meta: { requiresAuth: true, roles: ['worker'] }
   },
-  { path: '/', name: 'Login', component: Login },
+  { path: '/', name: 'Home', component: Home },
+  { path: '/login', name: 'Login', component: Login },
   { path: '/panel', name: 'Panel', component: Panel },
   { path: '/register', name: 'Register', component: Register }
 //   {
