@@ -1,4 +1,4 @@
-// src/stores/auth.ts
+// src/stores/auth.js
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -6,25 +6,25 @@ import axios from 'axios'
 
 export const useAuthStore = defineStore('auth', () => {
   /* ---------------- estado reactivo ---------------- */
-  const token = ref<string | null>(localStorage.getItem('token'))
-  const role  = ref<string | null>(localStorage.getItem('rol'))
-  const user  = ref<{ name?: string; email?: string; role?: string } | null>(null)
+  const token = ref(localStorage.getItem('token'))
+  const role  = ref(localStorage.getItem('rol'))
+  const user  = ref(null) // { name, email, role }
 
   /* -------------- helpers internos ----------------- */
   const router = useRouter()
 
-  /** Añade o elimina el header Authorization global de axios */
-  const setAuthHeader = (jwt: string | null) => {
+  // Añade o elimina el header Authorization global de axios
+  const setAuthHeader = (jwt) => {
     if (jwt) axios.defaults.headers.common.Authorization = `Bearer ${jwt}`
     else      delete axios.defaults.headers.common.Authorization
   }
 
-  // Si recargamos la página y hay token en localStorage:
+  // Si recargamos la página y hay token almacenado:
   if (token.value) setAuthHeader(token.value)
 
   /* ------------------- acciones -------------------- */
-  /** Login real contra tu API Flask */
-  const apiLogin = async (email: string, password: string) => {
+  // Login real contra tu API Flask
+  const apiLogin = async (email, password) => {
     try {
       const { data } = await axios.post('http://localhost:5000/auth/login', {
         email,
@@ -44,14 +44,14 @@ export const useAuthStore = defineStore('auth', () => {
       // navegación
       await router.push('/panel')
       return true
-    } catch (err: any) {
+    } catch (err) {
       console.error('Login fallido:', err.response?.data?.msg || err.message)
       return false
     }
   }
 
-  /** Login simulado (para desarrollos offline o demos) */
-  const mockLogin = (email: string, password: string) => {
+  // Login simulado (para desarrollos offline o demos)
+  const mockLogin = async (email, password) => {
     if (email === 'admin@admin.com' && password === 'admin123') {
       role.value = 'admin'
       user.value = { name: 'Administrador', email, role: 'admin' }
@@ -60,19 +60,24 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = { name: 'Usuario normal', email, role: 'user' }
     } else {
       alert('Credenciales inválidas')
-      return
+      return false
     }
-
-    // token falso para que la app funcione igual
+  
     token.value = 'mock-token'
     localStorage.setItem('token', token.value)
     localStorage.setItem('rol', role.value)
-    setAuthHeader(null)            // no mandamos token a la API
-
-    router.push('/panel')
+    setAuthHeader(null)
+  
+    try {
+      await router.push('/panel')
+      return true
+    } catch (err) {
+      console.error('Error navegando a /panel:', err)
+      return false
+    }
   }
 
-  /** Cierre de sesión (sirve para ambos modos) */
+  // Cierre de sesión (sirve para ambos modos)
   const logout = () => {
     token.value = null
     role.value  = null

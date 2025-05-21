@@ -7,13 +7,13 @@
         <div class="form-wrapper">
           <img src="/vite.svg" alt="Logo" class="form-logo" />
           <h2 class="form-title">Sign in to your account</h2>
-          <form @submit.prevent="handleLogin">
+          <form @submit.prevent="onSubmit">
             <div class="field">
               <label for="email">Email address</label>
               <input
                 id="email"
                 type="email"
-                v-model="email"
+                v-model="form.email"
                 required
                 placeholder="you@example.com"
               />
@@ -23,7 +23,7 @@
               <input
                 id="password"
                 type="password"
-                v-model="password"
+                v-model="form.password"
                 required
                 placeholder="••••••••"
               />
@@ -42,15 +42,40 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useAuthStore } from '../stores/auth'
+import { reactive, ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
-const email = ref('')
-const password = ref('')
+const form = reactive({
+  email: '',
+  password: ''
+})
+
+const loading = ref(false)
 const auth = useAuthStore()
 
-const handleLogin = () => {
-  auth.login({ email: email.value, password: password.value })
+const onSubmit = async () => {
+  console.log('Form submitted:', form)
+  loading.value = true
+
+  // Esperamos el resultado de mockLogin (async)
+  const ok = await auth.mockLogin(form.email, form.password)
+
+  if (!ok) {
+    alert('Usuario o contraseña incorrectos')
+  } else {
+    // Redirigir a panel si login OK
+    await router.push('/panel')
+  }
+  loading.value = false
+
+
+
+//   const ok = useMock
+//     ? auth.mockLogin(form.email, form.password)
+//     : await auth.apiLogin(form.email, form.password)
+
+//   if (!ok) alert('Usuario o contraseña incorrectos')
+//   loading.value = false
 }
 </script>
 
