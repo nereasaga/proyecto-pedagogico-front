@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { onMounted } from 'vue'
 
 const props = defineProps({
   initialData: {
@@ -7,6 +8,25 @@ const props = defineProps({
     default: () => ({})
   }
 })
+
+onMounted(loadData)
+
+const roles = ref([])
+const centrosTrabajo = ref([])
+
+async function loadData () {
+  try {
+    loading.value = true
+    // load roles and work centers
+    roles.value = await api.getRoles()
+    centrosTrabajo.value = await api.getCentrosTrabajo()
+  } catch (e) {
+    error.value = 'No se pudo cargar'
+    console.error(e)
+  } finally {
+    loading.value = false
+  }
+}
 
 const emit = defineEmits(['submit'])
 
@@ -56,22 +76,24 @@ const handleSubmit = () => {
     </div>
 
     <div class="form-group">
-      <label>Rol</label>
-      <select v-model="formData.rol" required>
-        <option value="Empleado">Empleado</option>
-        <option value="Responsable de Área">Responsable de Área</option>
-        <option value="Administrador">Administrador</option>
-      </select>
-    </div>
+  <label>Centro de trabajo</label>
+  <select v-model="formData.centro_trabajo" class="form-control">
+    <option disabled value="">Seleccione un centro</option>
+    <option v-for="c in centrosTrabajo" :key="c.id" :value="c.id">
+      {{ c.nombre }}
+    </option>
+  </select>
+</div>
 
-    <div class="form-group">
-      <label>Centro de Trabajo</label>
-      <select v-model="formData.centro_trabajo" required>
-        <option value="Barcelona">Barcelona</option>
-        <option value="Madrid">Madrid</option>
-        <option value="Málaga">Málaga</option>
-      </select>
-    </div>
+<div class="form-group">
+  <label>Rol</label>
+  <select v-model="formData.rol" class="form-control">
+    <option disabled value="">Seleccione un rol</option>
+    <option v-for="r in roles" :key="r.id" :value="r.id">
+      {{ r.nombre }}
+    </option>
+  </select>
+</div>
 
     <div class="form-group">
       <label>Horas Semanales</label>

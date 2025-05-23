@@ -35,9 +35,12 @@ export const api = {
     method: 'PUT',
     body: JSON.stringify(data)
   }),
-  deleteEmpleado: (id) => request(`/empleados/${id}`, {
+  deleteEmpleado: (id) => request(`/usuarios/empleados/${id}`, {
     method: 'DELETE'
   }),
+
+  //roles
+  getRoles: () => request('/roles'),
 
   // Calendario
   getCalendario: (id) => request(`/calendario/${id}`),

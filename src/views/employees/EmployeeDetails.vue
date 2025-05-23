@@ -115,6 +115,7 @@ async function loadData () {
     loading.value = true
     // info
     const emp = await api.getEmpleado(id)
+    console.log('Empleado recibido:', emp)
     Object.assign(form, emp)
 
     // holidays and schedules
