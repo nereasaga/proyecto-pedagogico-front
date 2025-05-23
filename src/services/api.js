@@ -1,8 +1,8 @@
-const BASE_URL = ''
+const BASE_URL = 'http://127.0.0.1:5000/api'
 
 async function request(endpoint, options = {}) {
   const token = localStorage.getItem('auth_token')
-  
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
@@ -25,20 +25,37 @@ async function request(endpoint, options = {}) {
 
 export const api = {
   // Empleados
-  getEmpleados: () => request('http://127.0.0.1:5000/api/todosEmpleados'),
-  getEmpleado: (id) => request(`http://127.0.0.1:5000/api/empleados/${id}`),
-  createEmpleado: (data) => request('http://127.0.0.1:5000/api/empleados', {
+  getEmpleados: () => request('/todosEmpleados'),
+  getEmpleado: (id) => request(`/empleados/${id}`),
+  createEmpleado: (data) => request('/empleados', {
     method: 'POST',
     body: JSON.stringify(data)
   }),
-  updateEmpleado: (id, data) => request(`http://127.0.0.1:5000/api/empleados/${id}`, {
+  updateEmpleado: (id, data) => request(`/empleados/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data)
   }),
-  deleteEmpleado: (id) => request(`http://127.0.0.1:5000/api/empleados/${id}`, {
+  deleteEmpleado: (id) => request(`/empleados/${id}`, {
     method: 'DELETE'
   }),
 
   // Calendario
-  getCalendario: (userId) => request(`http://127.0.0.1:5000/api/calendario/${userId}`)
+  getCalendario: (id) => request(`/calendario/${id}`),
+
+  // Schedules
+  getSchedules: (id) => request(`/horariosempleado/${id}`),
+
+  // Festivos
+  getFestivos: () => request('/festivos'),
+  createFestivo: (data) => request('/festivos', {
+    method: 'POST',
+    body: JSON.stringify(data)
+  }),
+  updateFestivo: (id, data) => request(`/festivos/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  }),
+  deleteFestivo: (id) => request(`/festivos/${id}`, {
+    method: 'DELETE'
+  }),
 }

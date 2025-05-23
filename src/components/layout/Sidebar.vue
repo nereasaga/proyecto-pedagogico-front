@@ -15,12 +15,10 @@ const menuItems = computed(() => {
     { 
       name: 'Dashboard', 
       path: '/',
-      icon: 'dashboard' 
     },
     { 
       name: 'Calendario', 
       path: '/calendar',
-      icon: 'calendar_today' 
     }
   ]
   
@@ -28,13 +26,11 @@ const menuItems = computed(() => {
     items.push({ 
       name: 'Trabajadores', 
       path: '/employees',
-      icon: 'people' 
     })
     
     items.push({ 
       name: 'Festivos', 
       path: '/holidays',
-      icon: 'event' 
     })
   }
   
@@ -42,7 +38,6 @@ const menuItems = computed(() => {
     items.push({ 
       name: 'Centros de Trabajo', 
       path: '/work-centers',
-      icon: 'location_city' 
     })
   }
   

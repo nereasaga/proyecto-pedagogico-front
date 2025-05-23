@@ -14,6 +14,7 @@ import WorkCenterDetails from '../views/workCenters/WorkCenterDetails.vue'
 import CalendarView from '../views/calendar/CalendarView.vue'
 import UserProfile from '../views/profile/UserProfile.vue'
 import NotFound from '../views/NotFound.vue'
+import Holidays from "../views/holidays/Holidays.vue"
 
 const routes = [
   {
@@ -77,6 +78,11 @@ const routes = [
         path: 'profile',
         name: 'UserProfile',
         component: UserProfile
+      },
+      {
+        path: 'holidays',
+        name: 'Holidays',
+        component: Holidays
       }
     ]
   },

@@ -43,7 +43,7 @@ const logout = () => {
         <span class="user-role">{{ userRole }}</span>
         <div class="user-dropdown">
           <button class="btn-icon">
-            <span class="material-icons">account_circle</span>
+            <span class="material-icons">O</span>
           </button>
           <div class="dropdown-menu">
             <router-link to="/profile" class="dropdown-item">Perfil</router-link>
