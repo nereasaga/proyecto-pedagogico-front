@@ -1,9 +1,14 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
-
+import { useEmployeesStore } from '../stores/employees'
+import { useWorkCentersStore } from '../stores/workCenters'
+import { useHolidaysStore } from '../stores/holidays'
 
 const authStore = useAuthStore()
+const employeesStore = useEmployeesStore()
+const workCentersStore = useWorkCentersStore()
+const holidaysStore = useHolidaysStore()
 
 const userRole = computed(() => authStore.userRole)
 const userName = computed(() => authStore.user?.name || '')
@@ -11,20 +16,29 @@ const isAdmin = computed(() => userRole.value === 'admin')
 const isManager = computed(() => ['admin', 'manager'].includes(userRole.value))
 const isEmployee = computed(() => userRole.value === 'employee')
 
-// Datos recibidos desde Flask
-const holidays = ref([])  // festivos_aplicables
-const vacations = ref([]) // vacaciones_registradas
+const userWorkCenterId = computed(() => {
+  if (isAdmin.value) return null // Admin can access all work centers
+  return authStore.user?.workCenter || null
+})
 
-// Estadísticas
+const employeeId = computed(() => {
+  if (isEmployee.value) return authStore.user?.employeeId || null
+  return null
+})
+
+// Employee stats
+const employeeStats = ref({
+  count: 0,
+  byWorkCenter: []
+})
+
+// Holiday stats
 const holidayStats = ref({
   upcoming: [],
   total: 0
 })
-const vacationStats = ref({
-  upcoming: [],
-  total: 0
-})
 
+// Get next 30 days
 const getUpcomingDays = () => {
   const today = new Date()
   const futureDate = new Date()
@@ -36,45 +50,71 @@ const getUpcomingDays = () => {
   }
 }
 
+// Load dashboard data
+const loadDashboardData = () => {
+  // Employee stats
+  if (isAdmin.value) {
+    employeeStats.value.count = employeesStore.employees.length
+    
+    // Group by work center
+    employeeStats.value.byWorkCenter = workCentersStore.workCenters.map(center => {
+      const employees = employeesStore.getEmployeesByWorkCenter(center.id)
+      return {
+        workCenterId: center.id,
+        workCenterName: center.name,
+        count: employees.length
+      }
+    })
+  } else if (isManager.value && userWorkCenterId.value) {
+    const employees = employeesStore.getEmployeesByWorkCenter(userWorkCenterId.value)
+    employeeStats.value.count = employees.length
+  }
+  
+  // Holiday stats
+  const { today, future } = getUpcomingDays()
+  
+  // Admin sees all holidays
+  if (isAdmin.value) {
+    holidayStats.value.total = holidaysStore.holidays.length
+    
+    // Get upcoming holidays
+    const allHolidays = holidaysStore.holidays
+    holidayStats.value.upcoming = allHolidays
+      .filter(holiday => holiday.date >= today && holiday.date <= future)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 5)
+  } 
+  // Manager sees holidays for their work center
+  else if (isManager.value && userWorkCenterId.value) {
+    const centerHolidays = holidaysStore.getHolidaysByWorkCenter(userWorkCenterId.value)
+    holidayStats.value.total = centerHolidays.length
+    
+    holidayStats.value.upcoming = centerHolidays
+      .filter(holiday => holiday.date >= today && holiday.date <= future)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 5)
+  }
+  // Employee sees holidays for their work center
+  else if (isEmployee.value && userWorkCenterId.value) {
+    const centerHolidays = holidaysStore.getHolidaysByWorkCenter(userWorkCenterId.value)
+    holidayStats.value.total = centerHolidays.length
+    
+    holidayStats.value.upcoming = centerHolidays
+      .filter(holiday => holiday.date >= today && holiday.date <= future)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(0, 5)
+  }
+}
+
+// Format date from ISO to readable format
 const formatDate = (dateString) => {
   const options = { year: 'numeric', month: 'long', day: 'numeric' }
   return new Date(dateString).toLocaleDateString('es-ES', options)
 }
 
-const fetchCalendarData = async () => {
-  try {
-    // Asumo que authStore.user.id contiene el usuario actual
-    const res = await fetch(`/api/calendario/${authStore.user.id}`)
-    if (!res.ok) throw new Error('Error al cargar calendario')
-    const data = await res.json()
-
-    holidays.value = data.festivos_aplicables
-    vacations.value = data.vacaciones_registradas
-
-    // Estadísticas de festivos próximos
-    const { today, future } = getUpcomingDays()
-    holidayStats.value.total = holidays.value.length
-    holidayStats.value.upcoming = holidays.value
-      .filter(h => h.fecha >= today && h.fecha <= future)
-      .sort((a,b) => a.fecha.localeCompare(b.fecha))
-      .slice(0, 5)
-
-    // Estadísticas vacaciones próximas aprobadas
-    vacationStats.value.total = vacations.value.length
-    vacationStats.value.upcoming = vacations.value
-      .filter(v => v.aprobada && v.fecha_inicio >= today && v.fecha_inicio <= future)
-      .sort((a,b) => a.fecha_inicio.localeCompare(b.fecha_inicio))
-      .slice(0, 5)
-
-  } catch (error) {
-    console.error(error)
-  }
-}
-
 onMounted(() => {
-  fetchCalendarData()
+  loadDashboardData()
 })
-
 </script>
 
 <template>

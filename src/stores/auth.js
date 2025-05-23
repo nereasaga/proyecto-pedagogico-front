@@ -1,111 +1,188 @@
-// src/stores/auth.js
+// import { defineStore } from 'pinia'
+// import { ref, computed } from 'vue'
+
+
+// export const useAuthStore = defineStore('auth', () => {
+//   const user = ref(null)
+//   const token = ref(localStorage.getItem('auth_token') || null)
+  
+//   const isAuthenticated = computed(() => !!user.value)
+//   const userRole = computed(() => user.value?.rol || null)
+  
+//   const hasRequiredRole = (requiredRoles) => {
+//     if (!user.value) return false
+//     if (user.value.rol === 'Administrador') return true
+//     return Array.isArray(requiredRoles) 
+//       ? requiredRoles.includes(user.value.rol)
+//       : user.value.rol === requiredRoles
+//   }
+
+//   async function login(email, password) {
+//     try {
+//       const response = await fetch('/api/login', {
+//         method: 'POST',
+//         headers: {
+//           'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify({ email, password })
+//       })
+      
+//       if (!response.ok) {
+//         throw new Error('Credenciales inválidas')
+//       }
+      
+//       const data = await response.json()
+//       user.value = data.user
+//       token.value = data.token
+//       localStorage.setItem('auth_token', data.token)
+      
+//       return data.user
+//     } catch (error) {
+//       throw new Error('Error al iniciar sesión')
+//     }
+//   }
+
+//   function logout() {
+//     user.value = null
+//     token.value = null
+//     localStorage.removeItem('auth_token')
+//   }
+
+//   async function checkAuth() {
+//     const token = localStorage.getItem('auth_token')
+//     if (!token) return false
+
+//     try {
+//       const response = await fetch('/api/me', {
+//         headers: {
+//           'Authorization': `Bearer ${token}`
+//         }
+//       })
+      
+//       if (!response.ok) {
+//         logout()
+//         return false
+//       }
+
+//       const data = await response.json()
+//       user.value = data
+//       return true
+//     } catch (error) {
+//       logout()
+//       return false
+//     }
+//   }
+
+//   return {
+//     user,
+//     token,
+//     isAuthenticated,
+//     userRole,
+//     hasRequiredRole,
+//     login,
+//     logout,
+//     checkAuth
+//   }
+// })
+
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import axios from 'axios'
 
 export const useAuthStore = defineStore('auth', () => {
-  /* ---------------- estado reactivo ---------------- */
-  const token = ref(localStorage.getItem('token'))
-  const role  = ref(localStorage.getItem('rol'))
-  const user  = ref(null) // { name, email, role }
-
-  /* -------------- helpers internos ----------------- */
-  const router = useRouter()
-
-  // Añade o elimina el header Authorization global de axios
-  const setAuthHeader = (jwt) => {
-    if (jwt) axios.defaults.headers.common.Authorization = `Bearer ${jwt}`
-    else      delete axios.defaults.headers.common.Authorization
-  }
-
-  // Si recargamos la página y hay token almacenado:
-  if (token.value) setAuthHeader(token.value)
-
-  /* ------------------- acciones -------------------- */
-  // Login real contra tu API Flask
-  const apiLogin = async (email, password) => {
-    try {
-      const { data } = await axios.post('http://localhost:5000/auth/login', {
-        email,
-        password,
-      })
-
-      // estado
-      token.value = data.access_token
-      role.value  = data.rol
-      user.value  = { email, role: data.rol }
-
-      // persistencia + headers
-      localStorage.setItem('token', token.value)
-      localStorage.setItem('rol', role.value)
-      setAuthHeader(token.value)
-
-      // navegación
-      await router.push('/panel')
-      return true
-    } catch (err) {
-      console.error('Login fallido:', err.response?.data?.msg || err.message)
-      return false
-    }
-  }
-
-  // Login simulado (para desarrollos offline o demos)
-  const mockLogin = async (email, password) => {
-    if (email === 'admin@admin.com' && password === 'admin123') {
-      role.value = 'admin'
-      user.value = { name: 'Administrador', email, role: 'admin' }
-    } else if (email && password) {
-      role.value = 'user'
-      user.value = { name: 'Usuario normal', email, role: 'user' }
-    } else {
-      alert('Credenciales inválidas')
-      return false
-    }
+  // State
+  const user = ref(null)
+  const token = ref(localStorage.getItem('auth_token') || null)
   
-    token.value = 'mock-token'
-    localStorage.setItem('token', token.value)
-    localStorage.setItem('rol', role.value)
-    setAuthHeader(null)
-
-    console.log('✅ mockLogin exitoso. Redirigiendo a /panel...')
-await router.push('/panel')
-  
-    try {
-      await router.push('/panel')
-      return true
-    } catch (err) {
-      console.error('Error navegando a /panel:', err)
-      return false
+  // For demo purposes, we'll create some mock users
+  const mockUsers = [
+    { 
+      id: 1, 
+      username: 'admin', 
+      password: 'admin123', 
+      name: 'Admin User', 
+      role: 'admin',
+      workCenter: null // Admin can access all work centers
+    },
+    { 
+      id: 2, 
+      username: 'manager', 
+      password: 'manager123', 
+      name: 'Area Manager', 
+      role: 'manager',
+      workCenter: 1 // Barcelona work center
+    },
+    { 
+      id: 3, 
+      username: 'employee', 
+      password: 'employee123', 
+      name: 'John Employee', 
+      role: 'employee',
+      workCenter: 1, // Barcelona work center
+      employeeId: 1 // Reference to employee record
     }
+  ]
+
+  // Getters
+  const isAuthenticated = computed(() => !!user.value)
+  
+  const userRole = computed(() => user.value ? user.value.role : null)
+  
+  const hasRequiredRole = (requiredRoles) => {
+    if (!user.value) return false
+    if (user.value.role === 'admin') return true // Admin has access to everything
+    return Array.isArray(requiredRoles) 
+      ? requiredRoles.includes(user.value.role)
+      : user.value.role === requiredRoles
   }
 
-  // Cierre de sesión (sirve para ambos modos)
-  const logout = () => {
+  // Actions
+  function login(username, password) {
+    // Find user in mock data (in real app, this would be an API call)
+    const foundUser = mockUsers.find(
+      u => u.username === username && u.password === password
+    )
+    
+    if (foundUser) {
+      // Create a copy without the password
+      const { password: _, ...userWithoutPassword } = foundUser
+      user.value = userWithoutPassword
+      
+      // Create mock token
+      const mockToken = `mock-jwt-token-${Date.now()}`
+      token.value = mockToken
+      localStorage.setItem('auth_token', mockToken)
+      
+      return Promise.resolve(userWithoutPassword)
+    }
+    
+    return Promise.reject(new Error('Invalid username or password'))
+  }
+
+  function logout() {
+    user.value = null
     token.value = null
-    role.value  = null
-    user.value  = null
-    localStorage.removeItem('token')
-    localStorage.removeItem('rol')
-    setAuthHeader(null)
-    router.push('/')
+    localStorage.removeItem('auth_token')
   }
 
-  const isAuthenticated = computed(() => !!token.value)
+  // Simulate checking if token is valid on page refresh
+  function checkAuth() {
+    if (token.value) {
+      // In a real app, you would validate the token with the server
+      // For this demo, we'll just set a mock user based on the token
+      user.value = mockUsers[0] // Set as admin for demo
+      return true
+    }
+    return false
+  }
 
-  /* ----------------- interface pública -------------- */
   return {
-    // estado
-    token,
-    role,
     user,
-
-    // acciones
-    apiLogin,
-    mockLogin,
-    logout,
-
-    // getters
+    token,
     isAuthenticated,
+    userRole,
+    hasRequiredRole,
+    login,
+    logout,
+    checkAuth
   }
 })
