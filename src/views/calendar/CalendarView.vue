@@ -1,27 +1,110 @@
+<template>
+  <div class="calendar-view">
+    <div class="calendar-header">
+      <h1>Calendario Laboral</h1>
+      <div class="calendar-filters">
+        <!-- Centro de Trabajo (solo Admin) -->
+        <div v-if="isAdmin" class="form-group">
+          <label for="workCenterFilter" class="form-label">Centro de Trabajo</label>
+          <select
+            id="workCenterFilter"
+            v-model="filters.workCenterId"
+            class="form-control"
+            @change="onWorkCenterChange"
+          >
+            <option :value="null">Todos los centros</option>
+            <option
+              v-for="c in availableWorkCenters"
+              :key="c.id"
+              :value="c.id"
+            >
+              {{ c.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Empleado -->
+        <div class="form-group">
+          <label for="employeeFilter" class="form-label">Empleado</label>
+          <select
+            id="employeeFilter"
+            v-model="filters.employeeId"
+            class="form-control"
+            @change="onEmployeeChange"
+            :disabled="isEmployee"
+          >
+            <option :value="null">Todos los empleados</option>
+            <option
+              v-for="e in availableEmployees"
+              :key="e.usuario_id"
+              :value="e.usuario_id"
+            >
+              {{ e.nombre_completo }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Mostrar / Ocultar -->
+        <div class="display-filters">
+          <label class="form-check">
+            <input
+              type="checkbox"
+              v-model="filters.showHolidays"
+              @change="refreshCalendar"
+            />
+            Mostrar festivos
+          </label>
+          <label class="form-check">
+            <input
+              type="checkbox"
+              v-model="filters.showVacations"
+              @change="refreshCalendar"
+            />
+            Mostrar vacaciones
+          </label>
+          <label class="form-check">
+            <input
+              type="checkbox"
+              v-model="filters.showWorkDays"
+              @change="refreshCalendar"
+            />
+            Mostrar días laborables
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="calendar-container">
+      <div ref="calendarEl" class="calendar"></div>
+    </div>
+  </div>
+</template>
+
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useEmployeesStore } from '../../stores/employees'
 import { useWorkCentersStore } from '../../stores/workCenters'
-// import { useHolidaysStore } from '../../stores/holidays'
+import { api } from '@/services/api'
 
-// Import FullCalendar core and plugins
+// FullCalendar core + plugins + locale
 import { Calendar } from '@fullcalendar/core'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
+import esLocale from '@fullcalendar/core/locales/es'
 
+// ——— Stores & Route ———
 const route = useRoute()
 const authStore = useAuthStore()
 const employeesStore = useEmployeesStore()
 const workCentersStore = useWorkCentersStore()
-const holidaysStore = useHolidaysStore()
 
-// Calendar container ref
+// ——— Calendar ref ———
 const calendarEl = ref(null)
 let calendar = null
 
-// Filter state
+// ——— Filtros reactivos ———
 const filters = ref({
   workCenterId: null,
   employeeId: null,
@@ -30,373 +113,238 @@ const filters = ref({
   showWorkDays: true
 })
 
-// User role information
-const userRole = computed(() => authStore.userRole)
-const isAdmin = computed(() => userRole.value === 'admin')
-const isManager = computed(() => ['admin', 'manager'].includes(userRole.value))
+// ——— Roles ———
+const userRole   = computed(() => authStore.userRole)
+const isAdmin    = computed(() => userRole.value === 'admin')
+const isManager  = computed(() => ['admin','manager'].includes(userRole.value))
 const isEmployee = computed(() => userRole.value === 'employee')
 
-// Get available work centers based on user role
+// ——— Centros disponibles ———
 const availableWorkCenters = computed(() => {
-  if (isAdmin.value) {
-    return workCentersStore.workCenters
-  } else if (isManager.value) {
-    const userWorkCenterId = authStore.user?.workCenter
-    if (!userWorkCenterId) return []
-    
-    return workCentersStore.workCenters.filter(
-      center => center.id === userWorkCenterId
-    )
+  if (isAdmin.value) return workCentersStore.workCenters
+  if (isManager.value) {
+    const wc = authStore.user?.workCenter
+    return wc
+      ? workCentersStore.workCenters.filter(c => c.id === wc)
+      : []
   }
   return []
 })
 
-// Get available employees based on selected work center and user role
+// ——— Empleados disponibles (filtrados) ———
 const availableEmployees = computed(() => {
   if (isEmployee.value) {
-    const employeeId = authStore.user?.employeeId
-    if (!employeeId) return []
-    
-    const employee = employeesStore.getEmployeeById(employeeId)
-    return employee ? [employee] : []
+    const me = employeesStore.getEmployeeById(authStore.user.employeeId)
+    return me ? [me] : []
   }
-  
+  let list = employeesStore.employees
   if (filters.value.workCenterId) {
-    return employeesStore.getEmployeesByWorkCenter(filters.value.workCenterId)
+    const centro = workCentersStore
+      .getWorkCenterById(filters.value.workCenterId)
+    if (centro) {
+      list = list.filter(e => e.centro_trabajo === centro.name)
+    }
   }
-  
-  if (isAdmin.value) {
-    return employeesStore.employees
-  }
-  
-  if (isManager.value) {
-    const userWorkCenterId = authStore.user?.workCenter
-    if (!userWorkCenterId) return []
-    
-    return employeesStore.getEmployeesByWorkCenter(userWorkCenterId)
-  }
-  
-  return []
+  return list
 })
 
-// Initialize with route params if provided
-const initializeFromRoute = () => {
-  const { employeeId } = route.params
-  
-  if (employeeId) {
-    const employee = employeesStore.getEmployeeById(employeeId)
-    if (employee) {
-      filters.value.employeeId = parseInt(employeeId)
-      filters.value.workCenterId = employee.workCenterId
-    }
-  } else if (isEmployee.value) {
-    // If user is an employee, show their own calendar
-    const employeeId = authStore.user?.employeeId
-    if (employeeId) {
-      const employee = employeesStore.getEmployeeById(employeeId)
-      if (employee) {
-        filters.value.employeeId = employeeId
-        filters.value.workCenterId = employee.workCenterId
-      }
-    }
-  } else if (isManager.value) {
-    // If user is a manager, select their work center
-    const workCenterId = authStore.user?.workCenter
-    if (workCenterId) {
-      filters.value.workCenterId = workCenterId
-    }
+// ——— Datos del backend ———
+const festivos  = ref([])
+const horarios  = ref([])
+const vacaciones = ref([])
+
+/** Trae festivos, horarios y vacaciones para un empleado */
+async function loadCalendarData(empId) {
+  try {
+    const data = await api.getCalendario(empId)
+    festivos.value   = data.festivos_aplicables   || []
+    horarios.value   = data.horarios_semanales   || []
+    vacaciones.value = data.vacaciones_registradas || []
+  } catch (e) {
+    console.error('Error al cargar calendario:', e)
+    festivos.value = []
+    horarios.value = []
+    vacaciones.value = []
   }
 }
 
-// Generate calendar events based on filters
-const generateCalendarEvents = () => {
-  const events = []
-  
-  // If no filters are applied, return empty array
-  if (!filters.value.workCenterId && !filters.value.employeeId) {
-    return events
-  }
-  
-  // Get selected work center
-  const workCenter = filters.value.workCenterId
-    ? workCentersStore.getWorkCenterById(filters.value.workCenterId)
-    : null
-  
-  // Get selected employee
-  const employee = filters.value.employeeId
-    ? employeesStore.getEmployeeById(filters.value.employeeId)
-    : null
-  
-  // Add holidays if filter is enabled
-  if (filters.value.showHolidays && workCenter) {
-    const holidays = holidaysStore.getAllSpecialDays(workCenter.id)
-    
-    holidays.forEach(holiday => {
-      events.push({
-        title: holiday.name,
-        start: holiday.date,
+/** Mapea nombre de día a número JS (0=Domingo) */
+function mapDayNameToNum(name) {
+  return {
+    Domingo:0, Lunes:1, Martes:2,
+    'Miércoles':3, Jueves:4, Viernes:5, Sábado:6
+  }[name] ?? null
+}
+
+// Conjuntos para exclusiones
+const holidayDates = computed(() =>
+  new Set(festivos.value.map(f => f.fecha))
+)
+const vacationDates = computed(() => {
+  const s = new Set()
+  vacaciones.value
+    .filter(v => v.aprobada)
+    .forEach(v => {
+      let d = new Date(v.fecha_inicio)
+      const end = new Date(v.fecha_fin)
+      while (d <= end) {
+        s.add(d.toISOString().slice(0,10))
+        d.setDate(d.getDate()+1)
+      }
+    })
+  return s
+})
+const workDaysNums = computed(() =>
+  horarios.value
+    .map(h => mapDayNameToNum(h.dia_semana))
+    .filter(n => n !== null)
+)
+
+/** Genera la lista de eventos para FullCalendar */
+function generateEvents() {
+  const evs = []
+
+  // Festivos
+  if (filters.value.showHolidays) {
+    festivos.value.forEach(f => {
+      evs.push({
+        title: f.descripcion,
+        start: f.fecha,
         allDay: true,
         classNames: ['holiday-event'],
         backgroundColor: '#ef5350',
-        borderColor: '#ef5350',
-        extendedProps: {
-          type: 'holiday'
-        }
+        borderColor:    '#ef5350',
+        extendedProps:  { type: 'holiday' }
       })
     })
   }
-  
-  // Add employee vacations if filter is enabled
-  if (filters.value.showVacations && employee) {
-    employee.vacations.forEach(vacation => {
-      const startDate = new Date(vacation.start)
-      const endDate = new Date(vacation.end)
-      
-      // Add one day to end date for inclusive range in FullCalendar
-      endDate.setDate(endDate.getDate() + 1)
-      
-      events.push({
-        title: 'Vacaciones',
-        start: vacation.start,
-        end: endDate.toISOString().split('T')[0],
-        allDay: true,
-        classNames: ['vacation-event'],
-        backgroundColor: '#ff9800',
-        borderColor: '#ff9800',
-        extendedProps: {
-          type: 'vacation',
-          days: vacation.days
-        }
+
+  // Vacaciones
+  if (filters.value.showVacations) {
+    vacaciones.value
+      .filter(v => v.aprobada)
+      .forEach(v => {
+        const end = new Date(v.fecha_fin)
+        end.setDate(end.getDate()+1)
+        evs.push({
+          title: 'Vacaciones',
+          start: v.fecha_inicio,
+          end:   end.toISOString().slice(0,10),
+          allDay: true,
+          classNames: ['vacation-event'],
+          backgroundColor: '#ff9800',
+          borderColor:    '#ff9800',
+          extendedProps:  { type: 'vacation', days: v.dias_solicitados }
+        })
       })
-    })
   }
-  
-  // Add work schedule if filter is enabled
-  if (filters.value.showWorkDays && employee) {
-    // Get current date
-    const currentDate = new Date()
-    const year = currentDate.getFullYear()
-    const month = currentDate.getMonth()
-    
-    // Generate work schedule for current month
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day)
-      const dayOfWeek = date.getDay() // 0 = Sunday, 1 = Monday, ...
-      
-      // Skip weekends if no schedule is defined
-      if (dayOfWeek === 0 && !employee.schedule.sunday) continue
-      if (dayOfWeek === 6 && !employee.schedule.saturday) continue
-      
-      // Map day of week to schedule property
-      const dayMap = [
-        'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
-      ]
-      
-      const scheduleDay = employee.schedule[dayMap[dayOfWeek]]
-      
-      // Skip if no schedule for this day
-      if (!scheduleDay) continue
-      
-      // Format date string
-      const dateString = date.toISOString().split('T')[0]
-      
-      // Check if date is a holiday or vacation
-      const isHoliday = events.some(
-        event => event.extendedProps?.type === 'holiday' && event.start === dateString
-      )
-      
-      const isVacation = events.some(
-        event => event.extendedProps?.type === 'vacation' && 
-        new Date(event.start) <= date && new Date(event.end) > date
-      )
-      
-      // Skip if date is a holiday or vacation
-      if (isHoliday || isVacation) continue
-      
-      // Add work schedule event
-      events.push({
-        title: `${scheduleDay.start} - ${scheduleDay.end}`,
-        start: dateString,
-        allDay: true,
-        classNames: ['workday-event'],
-        backgroundColor: '#4caf50',
-        borderColor: '#4caf50',
-        extendedProps: {
-          type: 'workday',
-          schedule: scheduleDay
-        }
-      })
-    }
-  }
-  
-  return events
-}
 
-// Update calendar with new events
-const updateCalendar = () => {
-  if (!calendar) return
-  
-  // Clear existing events
-  calendar.removeAllEvents()
-  
-  // Generate new events based on filters
-  const events = generateCalendarEvents()
-  
-  // Add events to calendar
-  calendar.addEventSource(events)
-}
+  // Días laborables
+  if (filters.value.showWorkDays) {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth()
+    const daysInMonth = new Date(year, month+1, 0).getDate()
 
-// Handle filter changes
-const handleFilterChange = () => {
-  updateCalendar()
-}
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d)
+      const ds = date.toISOString().slice(0,10)
+      const dow = date.getDay()
 
-// Initialize calendar
-const initializeCalendar = () => {
-  if (!calendarEl.value) return
-  
-  // Create calendar instance
-  calendar = new Calendar(calendarEl.value, {
-    plugins: [dayGridPlugin, interactionPlugin],
-    initialView: 'dayGridMonth',
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth'
-    },
-    locale: 'es',
-    firstDay: 1, // Monday as first day
-    height: 'auto',
-    events: generateCalendarEvents(),
-    eventDidMount: (info) => {
-      // Add tooltip with event details
-      const type = info.event.extendedProps?.type
-      
-      let tooltipContent = info.event.title
-      
-      if (type === 'workday') {
-        const schedule = info.event.extendedProps?.schedule
-        if (schedule) {
-          tooltipContent += ` (${schedule.break}h descanso)`
-        }
-      } else if (type === 'vacation') {
-        tooltipContent = `Vacaciones (${info.event.extendedProps?.days} días laborables)`
+      if (
+        workDaysNums.value.includes(dow) &&
+        !holidayDates.value.has(ds) &&
+        !vacationDates.value.has(ds)
+      ) {
+        const h = horarios.value.find(
+          h => mapDayNameToNum(h.dia_semana) === dow
+        )
+        evs.push({
+          title: `${h.hora_entrada} - ${h.hora_salida}`,
+          start: ds,
+          allDay: true,
+          classNames: ['workday-event'],
+          backgroundColor: '#4caf50',
+          borderColor:    '#4caf50',
+          extendedProps:  { type: 'workday' }
+        })
       }
-      
-      info.el.title = tooltipContent
     }
+  }
+
+  return evs
+}
+
+/** Inicializa FullCalendar */
+function initCalendar() {
+  if (!calendarEl.value) return
+  calendar = new Calendar(calendarEl.value, {
+    plugins:      [ dayGridPlugin, interactionPlugin ],
+    initialView:  'dayGridMonth',
+    headerToolbar:{ left:'prev,next today', center:'title', right:'dayGridMonth' },
+    locale:       'es',
+    locales:      [ esLocale ],
+    firstDay:     1,
+    height:       'auto',
+    events:       generateEvents()
   })
-  
-  // Render calendar
   calendar.render()
 }
 
-// Clean up calendar on component unmount
-const cleanup = () => {
-  if (calendar) {
-    calendar.destroy()
-    calendar = null
+/** Refresca solo los eventos */
+function refreshCalendar() {
+  if (!calendar) return
+  calendar.removeAllEvents()
+  calendar.addEventSource(generateEvents())
+}
+
+/** Inicializa filtros desde la ruta o rol */
+function initializeFromRoute() {
+  const { employeeId } = route.params
+  if (employeeId) {
+    filters.value.employeeId = +employeeId
+  } else if (isEmployee.value) {
+    filters.value.employeeId = authStore.user.employeeId
+  }
+  // Mapear centro_trabajo → workCenterId
+  if (filters.value.employeeId != null) {
+    const emp = employeesStore.getEmployeeById(filters.value.employeeId)
+    if (emp) {
+      const c = workCentersStore.workCenters
+        .find(x => x.name === emp.centro_trabajo)
+      filters.value.workCenterId = c?.id ?? null
+    }
   }
 }
 
-onMounted(() => {
-  // Initialize filters from route
+// — Watchers —
+watch(() => filters.value.employeeId, async (id) => {
+  await loadCalendarData(id)
+  refreshCalendar()
+})
+watch(() => filters.value.workCenterId, () => {
+  filters.value.employeeId = null
+  refreshCalendar()
+})
+
+// — Handlers UI —
+function onWorkCenterChange() { /* ya limpia employee */ }
+function onEmployeeChange()   { /* dispara el watcher */ }
+
+// — Lifecycle —
+onMounted(async () => {
+  // 1) Cargar empleados para el selector
+  await employeesStore.fetchEmployees()
+  // 2) Inicializar filtros
   initializeFromRoute()
-  
-  // Initialize calendar
-  initializeCalendar()
+  // 3) Cargar datos del calendario
+  if (filters.value.employeeId != null) {
+    await loadCalendarData(filters.value.employeeId)
+  }
+  // 4) Montar FullCalendar
+  initCalendar()
 })
 </script>
-
-<template>
-  <div class="calendar-view">
-    <div class="calendar-header">
-      <h1>Calendario Laboral</h1>
-      
-      <div class="calendar-filters">
-        <!-- Work Center Filter (Admin only) -->
-        <div v-if="isAdmin" class="form-group">
-          <label for="workCenterFilter" class="form-label">Centro de Trabajo</label>
-          <select 
-            id="workCenterFilter"
-            v-model="filters.workCenterId"
-            class="form-control"
-            @change="handleFilterChange"
-          >
-            <option :value="null">Todos los centros</option>
-            <option 
-              v-for="center in availableWorkCenters" 
-              :key="center.id" 
-              :value="center.id"
-            >
-              {{ center.name }}
-            </option>
-          </select>
-        </div>
-        
-        <!-- Employee Filter -->
-        <div class="form-group">
-          <label for="employeeFilter" class="form-label">Empleado</label>
-          <select 
-            id="employeeFilter"
-            v-model="filters.employeeId"
-            class="form-control"
-            @change="handleFilterChange"
-            :disabled="isEmployee"
-          >
-            <option :value="null">Todos los empleados</option>
-            <option 
-              v-for="employee in availableEmployees" 
-              :key="employee.id" 
-              :value="employee.id"
-            >
-              {{ employee.name }}
-            </option>
-          </select>
-        </div>
-        
-        <!-- Display Filters -->
-        <div class="display-filters">
-          <div class="form-check">
-            <input 
-              id="showHolidays"
-              v-model="filters.showHolidays"
-              type="checkbox"
-              @change="handleFilterChange"
-            >
-            <label for="showHolidays">Mostrar festivos</label>
-          </div>
-          
-          <div class="form-check">
-            <input 
-              id="showVacations"
-              v-model="filters.showVacations"
-              type="checkbox"
-              @change="handleFilterChange"
-            >
-            <label for="showVacations">Mostrar vacaciones</label>
-          </div>
-          
-          <div class="form-check">
-            <input 
-              id="showWorkDays"
-              v-model="filters.showWorkDays"
-              type="checkbox"
-              @change="handleFilterChange"
-            >
-            <label for="showWorkDays">Mostrar días laborables</label>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div class="calendar-container">
-      <div ref="calendarEl" class="calendar"></div>
-    </div>
-  </div>
-</template>
 
 <style>
 .calendar-view {
@@ -431,12 +379,12 @@ onMounted(() => {
 
 .calendar-container {
   background-color: white;
-  border-radius: var(--border-radius-md);
+  border-radius: var(--spacing-md);
   box-shadow: var(--shadow-sm);
   padding: var(--spacing-md);
 }
 
-/* Calendar custom styling */
+/* El elemento `<div class="calendar">` necesita altura para verse */
 .calendar {
   min-height: 500px;
 }
@@ -457,7 +405,6 @@ onMounted(() => {
   .calendar-filters {
     flex-direction: column;
   }
-  
   .display-filters {
     flex-direction: column;
     align-items: flex-start;
