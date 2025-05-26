@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useEmployeesStore } from '../../stores/employees'
 import { useWorkCentersStore } from '../../stores/workCenters'
-import { useHolidaysStore } from '../../stores/holidays'
+// import { useHolidaysStore } from '../../stores/holidays'
 
 // Import FullCalendar core and plugins
 import { Calendar } from '@fullcalendar/core'

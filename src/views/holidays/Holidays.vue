@@ -29,7 +29,7 @@
             <input id="descripcion" v-model="form.descripcion" type="text" required />
   
             <label for="tipo">Tipo de festivo:</label>
-            <select id="tipo" v-model="form.tipo_festivo_id">
+            <select id="tipo" v-model.number="form.tipo_festivo_id">
               <option disabled value="">Selecciona un tipo</option>
               <option value="1">1</option>
               <option v-for="tipo in tiposFestivo" :key="tipo.id" :value="tipo.id">
@@ -38,7 +38,7 @@
             </select>
 
             <label for="centro-edit">Centro de trabajo:</label>
-            <select id="centro-edit" v-model="form.centro_id" required>
+            <select id="centro-edit" v-model.number="form.centro_id" required>
                 <option :value="null">Todos</option>
                 <option v-for="centro in centrosTrabajo" :key="centro.id" :value="centro.id">
                     {{ centro.nombre }}
@@ -62,14 +62,14 @@
             <input id="descripcion-edit" v-model="form.descripcion" type="text" required />
   
             <label for="tipo-edit">Tipo de festivo:</label>
-            <select id="tipo-edit" v-model="form.tipo_festivo_id" required>
+            <select id="tipo" v-model.number="form.tipo_festivo_id" required>
               <option disabled value="">Selecciona un tipo</option>
               <option v-for="tipo in tiposFestivo" :key="tipo.id" :value="tipo.id">
                 {{ tipo.nombre }}
               </option>
             </select>
             <label for="centro-edit">Centro de trabajo:</label>
-            <select id="centro-edit" v-model="form.centro_id" required>
+            <select id="centro-edit" v-model.number="form.centro_id" required>
                 <option :value="null">Todos</option>
                 <option v-for="centro in centrosTrabajo" :key="centro.id" :value="centro.id">
                     {{ centro.nombre }}
@@ -97,7 +97,7 @@
 
 const fetchCentrosTrabajo = async () => {
   try {
-    centrosTrabajo.value = await api.getCentrosTrabajo()  // Debes tener este endpoint en api.js
+    centrosTrabajo.value = await api.getWorkCenters()
   } catch (e) {
     alert('Error al cargar centros de trabajo')
   }
@@ -110,7 +110,7 @@ const form = ref({
   tipo_festivo_id: '',
   centro_id: null  
 })
-  const editForm = ref({ fecha: '', descripcion: '', tipo_festivo_id: '' })
+  const editForm = ref({ fecha: '', descripcion: '', tipo_festivo_id: '', centro_id: null })
   const editingFestivo = ref(null)
   
   const loading = ref(false)
@@ -142,7 +142,8 @@ const form = ref({
     try {
       await api.createFestivo(form.value)
       await fetchFestivos()
-      form.value = { fecha: '', descripcion: '', tipo_festivo_id: '' }
+      form.value = { fecha: '', descripcion: '', tipo_festivo_id: '', centro_id: null }
+      console.log('Festivo creado:', form.value)
     } catch {
       alert('Error al guardar festivo')
     } finally {
@@ -175,7 +176,7 @@ const form = ref({
   
   const cancelEdit = () => {
     editingFestivo.value = null
-    editForm.value = { fecha: '', descripcion: '', tipo_festivo_id: '' }
+    editForm.value = { fecha: '', descripcion: '', tipo_festivo_id: '', centro_id: null }
   }
   
   /* ────── DELETE ────── */

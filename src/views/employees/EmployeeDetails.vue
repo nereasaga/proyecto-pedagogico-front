@@ -57,7 +57,7 @@
         <h2>Horarios</h2>
         <ul>
           <li v-for="h in horarios" :key="h.id">
-            {{ h.dia_semana }} – {{ h.hora_inicio }}-{{ h.hora_fin }}
+            {{ h.dia_nombre }} – {{ h.hora_entrada }}-{{ h.hora_salida }}
           </li>
         </ul>
 
@@ -119,12 +119,15 @@ async function loadData () {
     Object.assign(form, emp)
 
     // holidays and schedules
-    horarios.value   = await api.getHorariosEmpleado(id)
-    vacaciones.value = await api.getVacacionesEmpleado(id)
+    const calendario = await api.getCalendario(id)
+
+    horarios.value   = calendario.horarios_semanales
+    vacaciones.value = calendario.vacaciones_registradas
+    // horarios.value   = await api.getSchedules(id)
 
     // load roles and work centers
     roles.value = await api.getRoles()
-    centrosTrabajo.value = await api.getCentrosTrabajo()
+    centrosTrabajo.value = await api.getWorkCenters()
   } catch (e) {
     error.value = 'No se pudo cargar el empleado'
     console.error(e)

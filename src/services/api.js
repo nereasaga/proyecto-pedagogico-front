@@ -46,7 +46,10 @@ export const api = {
   getCalendario: (id) => request(`/calendario/${id}`),
 
   // Schedules
-  getSchedules: (id) => request(`/horariosempleado/${id}`),
+  // getSchedules: (id) => request(`/horariosempleado/${id}`),
+
+  // Work centers
+  getWorkCenters: () => request('/centrosTrabajo'),
 
   // Festivos
   getFestivos: () => request('/festivos'),
