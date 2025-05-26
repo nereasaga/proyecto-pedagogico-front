@@ -64,4 +64,5 @@ export const api = {
   deleteFestivo: (id) => request(`/festivos/${id}`, {
     method: 'DELETE'
   }),
+  getHorariosEmpleado: (id) => request(`/horariosempleado/${id}`),
 }
