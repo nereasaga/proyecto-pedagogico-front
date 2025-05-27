@@ -7,6 +7,7 @@ export const useEmployeesStore = defineStore('employees', () => {
   const employees = ref([]);
   const loading   = ref(false);
   const error     = ref(null);
+  const workCenters = ref([]);
 
   /* getters */
   const getEmployeeById = computed(
@@ -16,6 +17,8 @@ export const useEmployeesStore = defineStore('employees', () => {
   const getEmployeesByWorkCenter = computed(
     () => centroNombre => employees.value.filter(e => e.centro_trabajo === centroNombre)
   );
+    // Getter for work centers
+  const getWorkCenters = computed(() => workCenters.value);
 
   /* actions  */
   async function fetchEmployees() {
@@ -60,9 +63,14 @@ export const useEmployeesStore = defineStore('employees', () => {
     }
   }
 
+
+  
+
   return {
     employees, loading, error,
     getEmployeeById, getEmployeesByWorkCenter,
     fetchEmployees, addEmployee, updateEmployee, deleteEmployee
   };
 });
+
+
