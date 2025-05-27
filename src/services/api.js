@@ -35,7 +35,7 @@ export const api = {
     method: 'PUT',
     body: JSON.stringify(data)
   }),
-  deleteEmpleado: (id) => request(`/usuarios/empleados/${id}`, {
+  deleteEmpleado: (id) => request(`/empleados/${id}`, {
     method: 'DELETE'
   }),
 
@@ -49,7 +49,7 @@ export const api = {
   // getSchedules: (id) => request(`/horariosempleado/${id}`),
 
   // Work centers
-  getWorkCenters: () => request('/centrosTrabajo'),
+  getWorkCenters: () => request('/centros'),
 
   // Festivos
   getFestivos: () => request('/festivos'),

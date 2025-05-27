@@ -52,36 +52,34 @@
         </div>
   
         <!-- Edit holiday -->
-        <div v-if="editingFestivo" class="card">
-          <h2>Editar Festivo</h2>
-          <form @submit.prevent="handleSubmit" class="form-grid">
-            <label for="fecha-edit">Fecha:</label>
-            <input id="fecha-edit" v-model="form.fecha" type="date" required />
-  
-            <label for="descripcion-edit">Descripción:</label>
-            <input id="descripcion-edit" v-model="form.descripcion" type="text" required />
-  
-            <label for="tipo-edit">Tipo de festivo:</label>
-            <select id="tipo" v-model.number="form.tipo_festivo_id" required>
-              <option disabled value="">Selecciona un tipo</option>
-              <option v-for="tipo in tiposFestivo" :key="tipo.id" :value="tipo.id">
-                {{ tipo.nombre }}
-              </option>
-            </select>
-            <label for="centro-edit">Centro de trabajo:</label>
-            <select id="centro-edit" v-model.number="form.centro_id" required>
-                <option :value="null">Todos</option>
-                <option v-for="centro in centrosTrabajo" :key="centro.id" :value="centro.id">
-                    {{ centro.nombre }}
-                </option>
-            </select>
-  
-            <div class="form-actions">
-              <button type="submit" class="btn" :disabled="saving">Actualizar</button>
-              <button type="button" class="btn btn-outline" @click="resetForm">Cancelar</button>
-            </div>
-          </form>
-        </div>
+<div v-if="editingFestivo" class="card">
+  <h2>Editar Festivo</h2>
+  <form @submit.prevent="submitEdit" class="form-grid">
+    <label for="fecha-edit">Fecha:</label>
+    <input id="fecha-edit" v-model="editForm.fecha" type="date" required />
+
+    <label for="descripcion-edit">Descripción:</label>
+    <input id="descripcion-edit" v-model="editForm.descripcion" type="text" required />
+
+    <label for="tipo-edit">Tipo de festivo:</label>
+    <select id="tipo-edit" v-model.number="editForm.tipo_festivo_id" required>
+      <option disabled value="">Selecciona un tipo</option>
+      <option value="1">1</option>
+      <option v-for="t in tiposFestivo" :key="t.id" :value="t.id">{{ t.nombre }}</option>
+    </select>
+
+    <label for="centro-edit">Centro de trabajo:</label>
+    <select id="centro-edit" v-model.number="editForm.centro_id" required>
+      <option :value="null">Todos</option>
+      <option v-for="c in centrosTrabajo" :key="c.id" :value="c.id">{{ c.nombre }}</option>
+    </select>
+
+    <div class="form-actions">
+      <button type="submit" class="btn" :disabled="saving">Actualizar</button>
+      <button type="button" class="btn btn-outline" @click="cancelEdit">Cancelar</button>
+    </div>
+  </form>
+</div>
       </section>
     </div>
   </template>
@@ -121,6 +119,7 @@ const form = ref({
     loading.value = true
     try {
       festivos.value = await api.getFestivos()
+      console.log('festivos cargados:', festivos.value)
     } catch {
       alert('Error al cargar festivos')
     } finally {
@@ -153,13 +152,14 @@ const form = ref({
   
   /* ────── EDIT ────── */
   const editFestivo = (f) => {
-    editingFestivo.value = f
-    editForm.value = {
-      fecha: f.fecha.slice(0, 10),
-      descripcion: f.descripcion,
-      tipo_festivo_id: f.tipo_festivo_id
-    }
+  editingFestivo.value = f
+  editForm.value = {
+    fecha: f.fecha.slice(0, 10),
+    descripcion: f.descripcion,
+    tipo_festivo_id: f.tipo_festivo_id,
+    centro_id: f.centro_id_aplicable  
   }
+}
   
   const submitEdit = async () => {
     saving.value = true
