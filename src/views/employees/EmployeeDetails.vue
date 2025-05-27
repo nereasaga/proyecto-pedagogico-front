@@ -121,7 +121,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../../services/api.js'
 
@@ -140,50 +140,165 @@ const form = reactive({
   centro_trabajo: '',
   jornada_semanal_horas: 0,
   jornada_anual_horas: 0,
-  dias_vacaciones_asignados: 0
+  dias_vacaciones_asignados: 0,
+  empleado_id: null,
+  usuario_id: null
 })
 
-const roles = ref([])
-const centrosTrabajo = ref([])
-const horarios = ref([])
+const empleadoId = ref(null)
+const horarios   = ref([])
 const vacaciones = ref([])
-const nuevaVac = reactive({ fecha_inicio: '', fecha_fin: '', dias_solicitados: 1 })
 
 const dlgHorarios = ref(null)
 const dlgVacaciones = ref(null)
 
-function openHorarios () {
+function openHorarios() {
   dlgHorarios.value?.showModal()
 }
-function closeHorarios () {
+
+function closeHorarios() {
   dlgHorarios.value?.close()
 }
-function openVacaciones () {
+
+function openVacaciones() {
   dlgVacaciones.value?.showModal()
 }
-function closeVacaciones () {
+
+function closeVacaciones() {
   dlgVacaciones.value?.close()
 }
 
 onMounted(loadData)
 
+const roles = ref([])
+const centrosTrabajo = ref([])
+
 async function loadData () {
   try {
     loading.value = true
+
     const emp = await api.getEmpleado(id)
-    console.log('Empleado cargado:', emp)
+    console.log('[loadData] Empleado recibido:', emp)
     Object.assign(form, emp)
-    const calendario = await api.getCalendario(id)
-    horarios.value = calendario.horarios_semanales.map(h => ({ ...h }))
-    vacaciones.value = calendario.vacaciones_registradas.map(v => ({ ...v }))
-    roles.value = await api.getRoles()
-    centrosTrabajo.value = await api.getWorkCenters()
+
+    empleadoId.value = emp.empleado_id
+    console.log('[loadData] empleadoId real encontrado:', empleadoId.value)
+
+    if (!empleadoId.value) throw new Error('No se encontró el empleado vinculado a este usuario.')
+
+    const rolesData = await api.getRoles()
+    roles.value = rolesData
+
+    const centrosData = await api.getWorkCenters()
+    centrosTrabajo.value = centrosData
+
+    const horariosData = await api.getSchedules(empleadoId.value)
+    console.log('[loadData] horarios:', horariosData)
+    horarios.value = Array.isArray(horariosData) ? horariosData.map(h => ({ ...h })) : []
+
+    const vacacionesData = await api.getVacaciones(emp.empleado_id)
+    console.log('[loadData] vacaciones:', vacacionesData)
+    vacaciones.value = Array.isArray(vacacionesData) ? vacacionesData.map(v => ({ ...v })) : []
+    
+
   } catch (e) {
     error.value = 'No se pudo cargar el empleado'
-    console.error(e)
+    console.error('[loadData] ERROR:', e)
   } finally {
     loading.value = false
   }
+}
+
+const editHorarios    = ref(false)
+const vacacionesModal = ref(false)
+
+const nuevaVac = reactive({
+  fecha_inicio: '', fecha_fin:'', dias_solicitados:1
+})
+
+async function saveHorarios () {
+  try {
+    for (const h of horarios.value) {
+      if (h.id) {
+        await api.updateSchedule(h.id, {
+          dia_semana    : h.dia_semana,
+          hora_entrada  : h.hora_entrada,
+          hora_salida   : h.hora_salida
+        })
+      } else {
+        await api.createSchedule({
+          empleado_id    : empleadoId.value,
+          dia_semana    : h.dia_semana,
+          hora_entrada  : h.hora_entrada,
+          hora_salida   : h.hora_salida
+        })
+      }
+    }
+    alert('Horarios guardados')
+    editHorarios.value = false
+  } catch (e) {
+    alert('No se pudo guardar horarios')
+    console.error(e)
+  }
+}
+
+
+
+async function addVac () {
+  if (!nuevaVac.fecha_inicio || !nuevaVac.fecha_fin || !nuevaVac.dias_solicitados) {
+    alert("Completa todos los campos para añadir vacaciones")
+    return
+  }
+
+  try {
+    const vacacionNueva = {
+      empleado_id: empleadoId.value,
+      fecha_inicio: nuevaVac.fecha_inicio,
+      fecha_fin: nuevaVac.fecha_fin,
+      dias_solicitados: nuevaVac.dias_solicitados,
+      aprobada: true
+    }
+
+    await api.createVacaciones(vacacionNueva)
+    await recargarVacaciones()
+
+    Object.assign(nuevaVac, {
+      fecha_inicio: '',
+      fecha_fin: '',
+      dias_solicitados: 1
+    })
+
+  } catch(e) {
+    console.error("Error al añadir vacaciones:", e)
+    alert("No se pudo añadir la vacación")
+  }
+}
+
+async function updateVac (v) {
+  try {
+    await api.updateVacaciones(v.id, v)
+    alert('Actualizado')
+  } catch(e){ console.error(e) }
+}
+
+async function delVac (vid) {
+  if (!confirm('¿Eliminar estas vacaciones?')) return
+  try {
+    await api.deleteVacaciones(vid)
+    await recargarVacaciones()
+  } catch(e){ console.error(e) }
+}
+
+async function recargarVacaciones () {
+  console.log('[recargarVacaciones] ejecutando con ID:', empleadoId.value)
+  if (!empleadoId.value || isNaN(empleadoId.value)) {
+    console.warn("ID inválido al cargar vacaciones:", empleadoId.value)
+    return
+  }
+
+  const vacacionesData = await api.getVacaciones(empleadoId.value)
+  console.log('[recargarVacaciones] respuesta:', vacacionesData)
+  vacaciones.value = Array.isArray(vacacionesData) ? vacacionesData.map(v => ({ ...v })) : []
 }
 
 async function save () {
@@ -210,69 +325,10 @@ async function remove () {
     console.error(e)
   }
 }
-
-async function saveHorarios () {
-  try {
-    for (const h of horarios.value) {
-      if (!h.dia_semana || h.dia_semana === '') continue
-      if (h.id) {
-        await api.updateSchedule(h.id, {
-          dia_semana: h.dia_semana,
-          hora_entrada: h.hora_entrada,
-          hora_salida: h.hora_salida
-        })
-      } else {
-        await api.createSchedule({
-          usuario_id: id,
-          dia_semana: h.dia_semana,
-          hora_entrada: h.hora_entrada,
-          hora_salida: h.hora_salida
-        })
-      }
-    }
-    alert('Horarios guardados')
-  } catch (e) {
-    alert('No se pudo guardar horarios')
-    console.error(e)
-  }
-}
-
-async function updateVac (v) {
-  try {
-    await api.updateVacaciones(v.id, v)
-    alert('Actualizado')
-  } catch(e){ console.error(e) }
-}
-
-async function delVac (vid) {
-  if (!confirm('¿Eliminar estas vacaciones?')) return
-  try {
-    await api.deleteVacaciones(vid)
-    await recargarVacaciones()
-  } catch(e){ console.error(e) }
-}
-
-async function recargarVacaciones () {
-  if (!id || isNaN(id)) return
-  const respuesta = await api.getVacaciones(id)
-  vacaciones.value = respuesta.map(v => ({ ...v }))
-}
-
-async function addVac () {
-  if (!nuevaVac.fecha_inicio || !nuevaVac.fecha_fin || !nuevaVac.dias_solicitados) {
-    alert("Completa todos los campos para añadir vacaciones")
-    return
-  }
-  try {
-    await api.createVacaciones({ ...nuevaVac, empleado_id: id, aprobada: false })
-    await recargarVacaciones()
-    Object.assign(nuevaVac, { fecha_inicio: '', fecha_fin: '', dias_solicitados: 1 })
-  } catch(e) {
-    console.error("Error al añadir vacaciones:", e)
-    alert("No se pudo añadir la vacación")
-  }
-}
 </script>
+
+
+
 
 <style scoped>
 .employee-details { 
