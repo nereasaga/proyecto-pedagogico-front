@@ -203,7 +203,7 @@ function generateCalendarEvents() {
     while (date.getFullYear() === year && accumulated < annualHours.value) {
       const ds = date.toISOString().slice(0, 10)
       const dow = date.getDay()
-      const sched = workSchedules.value.find(h => h.dia_semana + 1 === dow)
+      const sched = workSchedules.value.find(h => h.dia_semana === dow)
 
       const isHoliday = festivos.value.some(f => f.fecha === ds)
       const isVacation = vacaciones.value.some(v => {
