@@ -6,39 +6,32 @@
     <div v-else>
       <form @submit.prevent="save" class="card">
         <h2>Datos Personales</h2>
-
         <div class="form-group">
           <label>Nombre completo</label>
           <input v-model="form.nombre_completo" class="form-control" />
         </div>
-
         <div class="form-group">
           <label>Email</label>
           <input v-model="form.email" class="form-control" type="email" />
         </div>
-
         <div class="form-group">
-  <label>Centro de trabajo</label>
-  <select v-model="form.centro_trabajo" class="form-control">
-    <option disabled value="">Seleccione un centro</option>
-    <option value="Madrid">Madrid</option>
-    <option v-for="c in centrosTrabajo" :key="c.id" :value="c.id">
-      {{ c.nombre }}
-    </option>
-  </select>
-</div>
-
-<div class="form-group">
-  <label>Rol</label>
-  <select v-model="form.rol" class="form-control">
-    <option disabled value="">Seleccione un rol</option>
-    <option value="Administrador">Administrador</option>
-    <option v-for="r in roles" :key="r.id" :value="r.id">
-      {{ r.nombre }}
-    </option>
-  </select>
-</div>
-
+          <label>Centro de trabajo</label>
+          <select v-model="form.centro_trabajo" class="form-control">
+            <option disabled value="">Seleccione un centro</option>
+            <option v-for="c in centrosTrabajo" :key="c.id" :value="c.id">
+              {{ c.nombre }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Rol</label>
+          <select v-model="form.rol" class="form-control">
+            <option disabled value="">Seleccione un rol</option>
+            <option v-for="r in roles" :key="r.id" :value="r.id">
+              {{ r.nombre }}
+            </option>
+          </select>
+        </div>
 
         <h2>Jornadas</h2>
         <div class="form-row">
@@ -59,9 +52,10 @@
         <h2>Horarios</h2>
         <ul>
           <li v-for="h in horarios" :key="h.id">
-            {{ h.dia_nombre }} – {{ h.hora_entrada }}-{{ h.hora_salida }}
+            {{ h.dia_nombre }} – {{ h.hora_entrada }} - {{ h.hora_salida }}
           </li>
         </ul>
+        <button type="button" class="btn btn-outline" @click="openHorarios">Editar horarios</button>
 
         <h2>Vacaciones</h2>
         <ul>
@@ -69,12 +63,57 @@
             {{ v.fecha_inicio }} → {{ v.fecha_fin }}
           </li>
         </ul>
+        <button type="button" class="btn btn-outline" @click="openVacaciones">Gestionar vacaciones</button>
 
         <div class="actions">
           <button :disabled="saving" class="btn">Guardar cambios</button>
           <button type="button" class="btn btn-outline" @click="remove">Eliminar empleado</button>
         </div>
       </form>
+
+      <dialog ref="dlgHorarios" class="modal">
+        <form @submit.prevent="saveHorarios">
+          <h3>Horarios (L-V)</h3>
+          <table class="table-horarios">
+            <tr v-for="h in horarios" :key="h.dia_semana">
+              <td>{{ h.dia_nombre }}</td>
+              <td><input type="time" v-model="h.hora_entrada"></td>
+              <td><input type="time" v-model="h.hora_salida"></td>
+              <input type="hidden" v-model.number="h.dia_semana" />
+            </tr>
+          </table>
+          <footer>
+            <button class="btn">Guardar</button>
+            <button type="button" class="btn btn-outline" @click="closeHorarios">Cerrar</button>
+          </footer>
+        </form>
+      </dialog>
+
+      <dialog ref="dlgVacaciones" class="modal">
+        <h3>Vacaciones</h3>
+        <table class="table-vacaciones">
+          <tr v-for="v in vacaciones" :key="v.id">
+            <td><input type="date" v-model="v.fecha_inicio"></td>
+            <td><input type="date" v-model="v.fecha_fin"></td>
+            <td><input type="number" v-model.number="v.dias_solicitados" min="1"></td>
+            <td><input type="checkbox" v-model="v.aprobada"></td>
+            <td>
+              <button @click="updateVac(v)" class="btn-small">💾</button>
+              <button @click="delVac(v.id)" class="btn-small btn-danger">🗑️</button>
+            </td>
+          </tr>
+        </table>
+        <h4>Añadir</h4>
+        <div class="add-vac">
+          <input type="date" v-model="nuevaVac.fecha_inicio">
+          <input type="date" v-model="nuevaVac.fecha_fin">
+          <input type="number" v-model.number="nuevaVac.dias_solicitados" min="1">
+          <button @click="addVac" class="btn">➕</button>
+        </div>
+        <footer>
+          <button type="button" class="btn btn-outline" @click="closeVacaciones">Cerrar</button>
+        </footer>
+      </dialog>
 
       <p v-if="error" class="error">{{ error }}</p>
     </div>
@@ -88,7 +127,7 @@ import { api } from '../../services/api.js'
 
 const route = useRoute()
 const router = useRouter()
-const id = route.params.id
+const id = Number(route.params.id)
 
 const loading = ref(true)
 const saving  = ref(false)
@@ -104,30 +143,39 @@ const form = reactive({
   dias_vacaciones_asignados: 0
 })
 
-const horarios   = ref([])
-const vacaciones = ref([])
-
-onMounted(loadData)
-
 const roles = ref([])
 const centrosTrabajo = ref([])
+const horarios = ref([])
+const vacaciones = ref([])
+const nuevaVac = reactive({ fecha_inicio: '', fecha_fin: '', dias_solicitados: 1 })
+
+const dlgHorarios = ref(null)
+const dlgVacaciones = ref(null)
+
+function openHorarios () {
+  dlgHorarios.value?.showModal()
+}
+function closeHorarios () {
+  dlgHorarios.value?.close()
+}
+function openVacaciones () {
+  dlgVacaciones.value?.showModal()
+}
+function closeVacaciones () {
+  dlgVacaciones.value?.close()
+}
+
+onMounted(loadData)
 
 async function loadData () {
   try {
     loading.value = true
-    // info
     const emp = await api.getEmpleado(id)
-    console.log('Empleado recibido:', emp)
+    console.log('Empleado cargado:', emp)
     Object.assign(form, emp)
-
-    // holidays and schedules
     const calendario = await api.getCalendario(id)
-
-    horarios.value   = calendario.horarios_semanales
-    vacaciones.value = calendario.vacaciones_registradas
-    // horarios.value   = await api.getSchedules(id)
-
-    // load roles and work centers
+    horarios.value = calendario.horarios_semanales.map(h => ({ ...h }))
+    vacaciones.value = calendario.vacaciones_registradas.map(v => ({ ...v }))
     roles.value = await api.getRoles()
     centrosTrabajo.value = await api.getWorkCenters()
   } catch (e) {
@@ -137,7 +185,6 @@ async function loadData () {
     loading.value = false
   }
 }
-
 
 async function save () {
   saving.value = true
@@ -164,14 +211,118 @@ async function remove () {
   }
 }
 
+async function saveHorarios () {
+  try {
+    for (const h of horarios.value) {
+      if (!h.dia_semana || h.dia_semana === '') continue
+      if (h.id) {
+        await api.updateSchedule(h.id, {
+          dia_semana: h.dia_semana,
+          hora_entrada: h.hora_entrada,
+          hora_salida: h.hora_salida
+        })
+      } else {
+        await api.createSchedule({
+          usuario_id: id,
+          dia_semana: h.dia_semana,
+          hora_entrada: h.hora_entrada,
+          hora_salida: h.hora_salida
+        })
+      }
+    }
+    alert('Horarios guardados')
+  } catch (e) {
+    alert('No se pudo guardar horarios')
+    console.error(e)
+  }
+}
+
+async function updateVac (v) {
+  try {
+    await api.updateVacaciones(v.id, v)
+    alert('Actualizado')
+  } catch(e){ console.error(e) }
+}
+
+async function delVac (vid) {
+  if (!confirm('¿Eliminar estas vacaciones?')) return
+  try {
+    await api.deleteVacaciones(vid)
+    await recargarVacaciones()
+  } catch(e){ console.error(e) }
+}
+
+async function recargarVacaciones () {
+  if (!id || isNaN(id)) return
+  const respuesta = await api.getVacaciones(id)
+  vacaciones.value = respuesta.map(v => ({ ...v }))
+}
+
+async function addVac () {
+  if (!nuevaVac.fecha_inicio || !nuevaVac.fecha_fin || !nuevaVac.dias_solicitados) {
+    alert("Completa todos los campos para añadir vacaciones")
+    return
+  }
+  try {
+    await api.createVacaciones({ ...nuevaVac, empleado_id: id, aprobada: false })
+    await recargarVacaciones()
+    Object.assign(nuevaVac, { fecha_inicio: '', fecha_fin: '', dias_solicitados: 1 })
+  } catch(e) {
+    console.error("Error al añadir vacaciones:", e)
+    alert("No se pudo añadir la vacación")
+  }
+}
 </script>
 
 <style scoped>
-.employee-details { padding: 20px; }
-.card { background: #fff; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,.1); padding: 20px; }
-.form-group { margin-bottom: 1rem; }
-.form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
-.form-control { width: 100%; padding: .5rem; border: 1px solid #ddd; border-radius: 4px; }
-.actions { margin-top: 1rem; display: flex; gap: .5rem; }
-.error { color: #d32f2f; margin-top: 1rem; }
+.employee-details { 
+  padding: 20px; 
+}
+.card { 
+  background: #fff; 
+  border-radius: 4px; 
+  box-shadow: 0 2px 4px rgba(0,0,0,.1); 
+  padding: 20px; 
+}
+.form-group { 
+  margin-bottom: 1rem; 
+}
+.form-row { 
+  display: flex; 
+  gap: 1rem; 
+  flex-wrap: wrap; 
+}
+.form-control { 
+  width: 100%; 
+  padding: .5rem; 
+  border: 1px solid #ddd; 
+  border-radius: 4px; 
+}
+.actions { 
+  margin-top: 1rem; 
+  display: flex; 
+  gap: .5rem; 
+}
+.error { 
+  color: #d32f2f; 
+  margin-top: 1rem; 
+}
+
+.modal{
+  padding:2rem;
+  border:none;
+  border-radius:8px;
+  box-shadow:0 8px 20px rgba(0,0,0,.2);
+  width: min(90vw, 600px);
+}
+
+.table-horarios td,
+.table-vacaciones td{ padding:.25rem .5rem }
+
+.btn-small{
+  font-size:.8rem;
+  padding:0 .4rem;
+  margin-left:.25rem;
+}
+.btn-small.btn-danger{background:#e53935;color:#fff}
 </style>

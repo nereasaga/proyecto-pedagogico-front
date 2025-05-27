@@ -46,7 +46,11 @@ export const api = {
   getCalendario: (id) => request(`/calendario/${id}`),
 
   // Schedules
-  // getSchedules: (id) => request(`/horariosempleado/${id}`),
+  getSchedules      : (id)      => request(`/horariosempleado/${id}`),
+  createSchedule    :  data     => request('/horariosempleado',     { method:'POST', body:JSON.stringify(data)}),
+  updateSchedule    : (id,data) => request(`/horariosempleado/${id}`,{ method:'PUT',  body:JSON.stringify(data)}),
+  deleteSchedule    :  id       => request(`/horariosempleado/${id}`,{ method:'DELETE'}),
+
 
   // Work centers
   getWorkCenters: () => request('/centros'),
@@ -64,5 +68,12 @@ export const api = {
   deleteFestivo: (id) => request(`/festivos/${id}`, {
     method: 'DELETE'
   }),
+
+// -------- Vacaciones ----------------------------------------------
+  getVacaciones     : (idEmp)   => request(`/vacaciones/empleado/${idEmp}`),
+  createVacaciones    :  data     => request('/vacaciones',           { method:'POST', body:JSON.stringify(data)}),
+  updateVacaciones    : (id,data) => request(`/vacaciones/${id}`,     { method:'PUT',  body:JSON.stringify(data)}),
+  deleteVacaciones    :  id       => request(`/vacaciones/${id}`,     { method:'DELETE'}),
+
   getHorariosEmpleado: (id) => request(`/horariosempleado/${id}`),
 }
