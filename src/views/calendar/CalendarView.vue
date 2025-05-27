@@ -5,10 +5,10 @@
       <div class="calendar-filters">
         <!-- Work Center Filter (solo Admin) -->
         <div v-if="isAdmin" class="form-group">
-          <label for="workCenterFilter" class="form-label">Centro de Trabajo</label>
+          <label for="workCenterFilter">Centro de Trabajo</label>
           <select id="workCenterFilter" v-model="filters.workCenterId" class="form-control"
             @change="onWorkCenterChange">
-            <option :value="null">Todos los centros</option>
+            <option :value="null">Seleccionar centro</option>
             <option v-for="center in availableWorkCenters" :key="center.id" :value="center.id">
               {{ center.name }}
             </option>
@@ -17,10 +17,10 @@
 
         <!-- Employee Filter -->
         <div class="form-group">
-          <label for="employeeFilter" class="form-label">Empleado</label>
+          <label for="employeeFilter">Empleado</label>
           <select id="employeeFilter" v-model="filters.employeeId" class="form-control" :disabled="isEmployee"
             @change="onEmployeeChange">
-            <option :value="null">Todos los empleados</option>
+            <option :value="null">Seleccionar empleado</option>
             <option v-for="emp in availableEmployees" :key="emp.usuario_id" :value="emp.usuario_id">
               {{ emp.nombre_completo }}
             </option>
@@ -30,13 +30,16 @@
         <!-- Mostrar/Ocultar toggles -->
         <div class="display-filters">
           <label class="form-check">
-            <input type="checkbox" v-model="filters.showHolidays" @change="refreshCalendar" /> Mostrar festivos
+            <input type="checkbox" v-model="filters.showHolidays" @change="refreshCalendar" />
+            Mostrar festivos
           </label>
           <label class="form-check">
-            <input type="checkbox" v-model="filters.showVacations" @change="refreshCalendar" /> Mostrar vacaciones
+            <input type="checkbox" v-model="filters.showVacations" @change="refreshCalendar" />
+            Mostrar vacaciones
           </label>
           <label class="form-check">
-            <input type="checkbox" v-model="filters.showWorkDays" @change="refreshCalendar" /> Mostrar días laborables
+            <input type="checkbox" v-model="filters.showWorkDays" @change="refreshCalendar" />
+            Mostrar días laborables
           </label>
         </div>
       </div>
@@ -56,24 +59,20 @@ import { useEmployeesStore } from '@/stores/employees'
 import { useWorkCentersStore } from '@/stores/workCenters'
 import { api } from '@/services/api'
 
-// FullCalendar + plugins + locale
 import { Calendar } from '@fullcalendar/core'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import esLocale from '@fullcalendar/core/locales/es'
 
-// ——— Stores & Route ———
 const route = useRoute()
 const authStore = useAuthStore()
 const employeesStore = useEmployeesStore()
 const workCentersStore = useWorkCentersStore()
 const { getCalendario, getHorariosEmpleado, getEmpleado } = api
 
-// ——— Calendar ref ———
 const calendarEl = ref(null)
 let calendar = null
 
-// ——— Filter state ———
 const filters = ref({
   workCenterId: null,
   employeeId: null,
@@ -82,13 +81,11 @@ const filters = ref({
   showWorkDays: true
 })
 
-// ——— User roles ———
 const userRole = computed(() => authStore.userRole)
 const isAdmin = computed(() => userRole.value === 'admin')
 const isManager = computed(() => ['admin', 'manager'].includes(userRole.value))
 const isEmployee = computed(() => userRole.value === 'employee')
 
-// ——— Available work centers ———
 const availableWorkCenters = computed(() => {
   if (isAdmin.value) return workCentersStore.workCenters
   if (isManager.value) {
@@ -100,7 +97,6 @@ const availableWorkCenters = computed(() => {
   return []
 })
 
-// ——— Available employees ———
 const availableEmployees = computed(() => {
   if (isEmployee.value) {
     const me = employeesStore.getEmployeeById(authStore.user.employeeId)
@@ -116,33 +112,32 @@ const availableEmployees = computed(() => {
   return list
 })
 
-// ——— Data from backend ———
 const festivos = ref([])
 const vacaciones = ref([])
 const workSchedules = ref([])
-const annualHours = ref(0)  // jornada_anual_horas
+const annualHours = ref(0)
 
-/** Load all calendar data */
 async function loadAllData(empId) {
   if (!empId) {
-    festivos.value = []; vacaciones.value = []; workSchedules.value = []; annualHours.value = 0
+    festivos.value = []
+    vacaciones.value = []
+    workSchedules.value = []
+    annualHours.value = 0
     return
   }
-  // Festivos & vacaciones
   try {
     const data = await getCalendario(empId)
     festivos.value = data.festivos_aplicables || []
     vacaciones.value = data.vacaciones_registradas || []
   } catch {
-    festivos.value = []; vacaciones.value = []
+    festivos.value = []
+    vacaciones.value = []
   }
-  // Horarios
   try {
     workSchedules.value = await getHorariosEmpleado(empId)
   } catch {
     workSchedules.value = []
   }
-  // Jornada anual
   try {
     const emp = await getEmpleado(empId)
     annualHours.value = emp.jornada_anual_horas || 0
@@ -151,13 +146,15 @@ async function loadAllData(empId) {
   }
 }
 
-/** Convert "HH:MM:SS" to decimal hours */
 function parseHours(hms) {
   const [h, m] = hms.split(':').map(Number)
   return h + m / 60
 }
 
-/** Generate FullCalendar events */
+function pad(n) {
+  return n < 10 ? '0' + n : '' + n
+}
+
 function generateCalendarEvents() {
   const events = []
 
@@ -196,22 +193,34 @@ function generateCalendarEvents() {
       })
   }
 
-  // Días laborables (respetando anualHours)
+  // Días laborables
   if (filters.value.showWorkDays) {
-    const now = new Date(), year = now.getFullYear()
-    let date = new Date(year, 0, 1), accumulated = 0
-    while (date.getFullYear() === year && accumulated < annualHours.value) {
-      const ds = date.toISOString().slice(0, 10)
-      const dow = date.getDay()
-      const sched = workSchedules.value.find(h => h.dia_semana === dow)
+    const year = new Date().getFullYear()
+    let accumulated = 0
+
+    // Recorre cada día del año
+    for (let i = 0; i < 365; i++) {
+      const date = new Date(year, 0, 1 + i)
+      if (date.getFullYear() !== year) break
+
+      const Y = date.getFullYear()
+      const M = pad(date.getMonth() + 1)
+      const D = pad(date.getDate())
+      const ds = `${Y}-${M}-${D}`  // Formato local sin timezone
+
+      const dow = date.getDay()     // JS: 0=Dom,1=Lun…6=Sáb
+      // Backend usa 1=Lunes…5=Viernes
+      const backendDay = dow === 0 ? 7 : dow
+
+      const sched = workSchedules.value.find(h => h.dia_semana === backendDay)
 
       const isHoliday = festivos.value.some(f => f.fecha === ds)
       const isVacation = vacaciones.value.some(v => {
-        const start = new Date(v.fecha_inicio), end = new Date(v.fecha_fin)
-        return v.aprobada && start <= date && date <= end
+        const s = new Date(v.fecha_inicio), e = new Date(v.fecha_fin)
+        return v.aprobada && s <= date && date <= e
       })
 
-      if (!isHoliday && !isVacation && sched) {
+      if (sched && !isHoliday && !isVacation) {
         const hrs = parseHours(sched.hora_salida) - parseHours(sched.hora_entrada)
         if (accumulated + hrs <= annualHours.value) {
           events.push({
@@ -224,16 +233,16 @@ function generateCalendarEvents() {
             extendedProps: { type: 'workday', hours: hrs }
           })
           accumulated += hrs
-        } else break
+        } else {
+          break
+        }
       }
-      date.setDate(date.getDate() + 1)
     }
   }
 
   return events
 }
 
-/** Initialize FullCalendar */
 function initializeCalendar() {
   if (!calendarEl.value) return
   calendar = new Calendar(calendarEl.value, {
@@ -249,14 +258,12 @@ function initializeCalendar() {
   calendar.render()
 }
 
-/** Refresh events only */
 function refreshCalendar() {
   if (!calendar) return
   calendar.removeAllEvents()
   calendar.addEventSource(generateCalendarEvents())
 }
 
-// Watchers
 watch(() => filters.value.employeeId, async id => {
   await loadAllData(id)
   refreshCalendar()
@@ -265,15 +272,9 @@ watch(() => filters.value.workCenterId, () => {
   filters.value.employeeId = null
   refreshCalendar()
 })
-watch(() => [filters.value.showHolidays, filters.value.showVacations, filters.value.showWorkDays], () => {
-  refreshCalendar()
-})
+watch(() => [filters.value.showHolidays, filters.value.showVacations, filters.value.showWorkDays],
+  () => refreshCalendar())
 
-// Handlers
-function onWorkCenterChange() { /* triggers watcher */ }
-function onEmployeeChange() { /* triggers watcher */ }
-
-// Lifecycle
 onMounted(async () => {
   await employeesStore.fetchEmployees()
   const eid = route.params.employeeId
