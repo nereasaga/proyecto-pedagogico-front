@@ -37,17 +37,19 @@
     loading.value = true
     try {
       const empleados = await api.getEmpleados()
+      // console.log(empleados)
   
       total.value = empleados.length
   
       if (isAdmin.value) {
         // agrupar por centro
-        const centros = await api.getCentrosTrabajo()
+        const centros = await api.getWorkCenters()
+        // console.log(centros)
         byCenter.value = centros.map(c => ({
-          id: c.id,
-          nombre: c.nombre,
-          count: empleados.filter(e => e.centro_id === c.id).length
-        }))
+        id: c.id,
+        nombre: c.nombre,
+        count: empleados.filter(e => e.centro_trabajo === c.nombre).length
+      }))
       }
     } catch (e) {
       console.error(e)
@@ -56,4 +58,10 @@
     }
   }
   </script>
+
+  <style scoped>
+  .dashboard-card {
+    list-style: none;
+  }
+</style>
   

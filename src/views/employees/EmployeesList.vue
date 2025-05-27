@@ -1,64 +1,56 @@
 <script setup>
-import { onMounted } from 'vue'
-import { useEmployeesStore } from '../../stores/employees'
-import EmployeeForm from '../../components/employees/EmployeeForm.vue'
+import { onMounted } from 'vue';
+import { useEmployeesStore } from '@/stores/employees';
+import EmployeeForm from '@/components/employees/EmployeeForm.vue';
 
-const employeesStore = useEmployeesStore()
+const store = useEmployeesStore();
 
-const handleSubmit = async (formData) => {
+onMounted(store.fetchEmployees);
+
+async function handleSubmit(formData) {
   try {
-    await employeesStore.addEmployee(formData)
-  } catch (error) {
-    console.error('Error al crear empleado:', error)
+    await store.addEmployee(formData);
+  } catch (err) {
+    console.error(err);
   }
 }
-
-onMounted(() => {
-  employeesStore.fetchEmployees()
-})
 </script>
 
 <template>
   <div class="employees-list">
     <h1>Gestión de Empleados</h1>
 
+    <!-- Nuevo -->
     <div class="card">
-      <h2>Nuevo Empleado</h2>
+      <h2>Nuevo empleado</h2>
       <EmployeeForm @submit="handleSubmit" />
     </div>
 
+    <!-- Tabla -->
     <div class="card">
       <h2>Empleados</h2>
-      
-      <div v-if="employeesStore.loading">Cargando...</div>
-      
-      <div v-else-if="employeesStore.error" class="error">
-        {{ employeesStore.error }}
-      </div>
-      
+
+      <div v-if="store.loading">Cargando…</div>
+      <div v-else-if="store.error" class="error">{{ store.error }}</div>
+
       <table v-else>
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Centro</th>
-            <th>Rol</th>
-            <th>Acciones</th>
+            <th>Nombre</th><th>Email</th>
+            <th>Centro</th><th>Rol</th><th>Acciones</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="employee in employeesStore.employees" :key="employee.usuario_id">
-            <td>{{ employee.nombre_completo }}</td>
-            <td>{{ employee.email }}</td>
-            <td>{{ employee.centro_trabajo }}</td>
-            <td>{{ employee.rol }}</td>
+          <tr v-for="emp in store.employees" :key="emp.usuario_id">
+            <td>{{ emp.nombre_completo }}</td>
+            <td>{{ emp.email }}</td>
+            <td>{{ emp.centro_trabajo }}</td>
+            <td>{{ emp.rol }}</td>
             <td>
-              <router-link 
-                :to="`/employees/${employee.usuario_id}`"
-                class="btn btn-small"
-              >
-                Ver
-              </router-link>
+              <router-link
+                :to="`/employees/${emp.usuario_id}`"
+                class="btn-small"
+              >Ver</router-link>
             </td>
           </tr>
         </tbody>
@@ -66,6 +58,7 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
 
 <style>
 .employees-list {
