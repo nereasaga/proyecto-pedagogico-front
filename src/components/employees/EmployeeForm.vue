@@ -30,11 +30,11 @@ const formData = reactive({
   jornada_anual_horas: props.initialData.jornada_anual_horas,
   dias_vacaciones_asignados: props.initialData.dias_vacaciones_asignados,
 
-  horarios: props.initialData.horarios || diasSemana.map(dia => ({
-    dia_semana: dia,
-    hora_entrada: '',
-    hora_salida: ''
-  })),
+  horarios: props.initialData.horarios || diasSemana.map((dia, i) => ({
+  dia_semana: i + 1,        
+  hora_entrada: '',
+  hora_salida: ''
+})),
 })
 
 
