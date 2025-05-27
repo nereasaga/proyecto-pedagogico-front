@@ -21,6 +21,7 @@
   <label>Centro de trabajo</label>
   <select v-model="form.centro_trabajo" class="form-control">
     <option disabled value="">Seleccione un centro</option>
+    <option value="Madrid">Madrid</option>
     <option v-for="c in centrosTrabajo" :key="c.id" :value="c.id">
       {{ c.nombre }}
     </option>
@@ -31,6 +32,7 @@
   <label>Rol</label>
   <select v-model="form.rol" class="form-control">
     <option disabled value="">Seleccione un rol</option>
+    <option value="Administrador">Administrador</option>
     <option v-for="r in roles" :key="r.id" :value="r.id">
       {{ r.nombre }}
     </option>
