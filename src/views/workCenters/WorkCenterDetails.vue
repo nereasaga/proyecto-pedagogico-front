@@ -15,18 +15,18 @@
       <div class="card">
         <h2 class="titulo-seccion">Información del Centro</h2>
 
-        <div class="forms-grid">
-          <div>
+        <div class="data-grid">
+          <div class="data-grid-item">
             <p class="etiqueta-secundaria">ID</p>
             <p class="texto-destacado">{{ workCenter.id }}</p>
           </div>
 
-          <div>
+          <div class="data-grid-item">
             <p class="etiqueta-secundaria">Nombre</p>
             <p class="texto-destacado">{{ workCenter.nombre }}</p>
           </div>
 
-          <div>
+          <div class="data-grid-item">
             <p class="etiqueta-secundaria">Ubicación</p>
             <p class="texto-destacado">{{ workCenter.ubicacion }}</p>
           </div>
@@ -78,36 +78,26 @@ onMounted(() => {
   margin-bottom: 2rem;
 }
 
-.centros-list ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.data-grid {
+  display: flex; 
+  flex-wrap: wrap; /* Allow items to wrap to the next line */
+  gap: 1.5rem;
 }
 
-.centros-item {
+.data-grid-item {
+  border: 1px solid #e8dede;
+  padding: 1rem;
+  border-radius: 0.25rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
+  flex-direction: column; /* Stack items vertically within each item */
+  flex: 1 1 calc(50% - 0.75rem); /* For large screens, two columns */
 }
-
-.action-buttons {
-  display: flex;
-  gap: 0.75rem;
+/* Mobile styles: single column */
+@media (max-width: 768px) {
+  .data-grid-item {
+    flex: 1 1 100%; /* Take full width on small screens */
+  }
 }
-
-.forms-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-
-.form-grid {
-  display: grid;
-  gap: 0.75rem;
-}
-
 .btn {
   padding: 0.5rem 1rem;
   background: #1976d2;

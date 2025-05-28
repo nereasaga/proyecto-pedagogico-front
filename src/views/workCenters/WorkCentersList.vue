@@ -7,7 +7,7 @@
       <h2 class="titulo-seccion">Añadir Nuevo Centro</h2>
 
       <form @submit.prevent="addNewWorkCenter" class="form-grid">
-        <div class="forms-grid">
+        <div class="centros-grid">
           <div>
             <label class="etiqueta">Nombre</label>
             <input
@@ -76,7 +76,7 @@
           </button>
         </div>
 
-        <form @submit.prevent="updateWorkCenter" class="form-grid">
+        <form @submit.prevent="updateWorkCenter" class="centros-grid">
           <div>
             <label class="etiqueta">Nombre</label>
             <input
@@ -273,13 +273,13 @@ async function confirmDelete(center) {
   margin-bottom: 2rem;
 }
 
-.forms-grid {
+.centros-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
 }
 
-.form-grid {
+.centros-item {
   display: grid;
   gap: 0.75rem;
 }
@@ -312,7 +312,9 @@ async function confirmDelete(center) {
   display: flex;
   gap: 0.75rem;
 }
-
+button {
+  margin:0.4rem;
+}
 .btn {
   padding: 0.5rem 1rem;
   background: #1976d2;
