@@ -16,10 +16,10 @@
         <h2 class="titulo-seccion">Información del Centro</h2>
 
         <div class="data-grid">
-          <div class="data-grid-item">
+          <!--<div class="data-grid-item">
             <p class="etiqueta-secundaria">ID</p>
             <p class="texto-destacado">{{ workCenter.id }}</p>
-          </div>
+          </div>-->
 
           <div class="data-grid-item">
             <p class="etiqueta-secundaria">Nombre</p>

@@ -46,11 +46,11 @@
           class="centros-item"
         >
           <div>
-            <strong>#{{ center.id }}</strong> -
+            <!--<strong>#{{ center.id }}</strong> -->
             <router-link :to="`/work-centers/${center.id}`" class="enlace-detalle">
               {{ center.nombre }}
             </router-link>
-            <span>({{ center.ubicacion }})</span>
+            <span>  -  {{ center.ubicacion }}</span>
           </div>
           <div class="action-buttons">
             <button @click="openEditModal(center)" class="btn-outline">Editar</button>
