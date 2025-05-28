@@ -108,7 +108,7 @@
           <input type="date" v-model="nuevaVac.fecha_inicio">
           <input type="date" v-model="nuevaVac.fecha_fin">
           <input type="number" v-model.number="nuevaVac.dias_solicitados" min="1">
-          <button @click="addVac" class="btn">➕</button>
+          <button @click="addVac" class="btn-plus">➕</button>
         </div>
         <footer>
           <button type="button" class="btn btn-outline" @click="closeVacaciones">Cerrar</button>
@@ -264,7 +264,7 @@ async function addVac () {
     return
   }
   try {
-    await api.createVacaciones({ ...nuevaVac, empleado_id: id, aprobada: false })
+    await api.createVacaciones({ ...nuevaVac, empleado_id: id, aprobada: true })
     await recargarVacaciones()
     Object.assign(nuevaVac, { fecha_inicio: '', fecha_fin: '', dias_solicitados: 1 })
   } catch(e) {
@@ -308,21 +308,84 @@ async function addVac () {
   margin-top: 1rem; 
 }
 
-.modal{
-  padding:2rem;
-  border:none;
-  border-radius:8px;
-  box-shadow:0 8px 20px rgba(0,0,0,.2);
+.modal {
+  padding: 2rem;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   width: min(90vw, 600px);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  z-index: 1000;
 }
-
 .table-horarios td,
-.table-vacaciones td{ padding:.25rem .5rem }
-
-.btn-small{
-  font-size:.8rem;
-  padding:0 .4rem;
-  margin-left:.25rem;
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.btn-small.btn-danger{background:#e53935;color:#fff}
+
+.table-vacaciones {
+  width: 100%;
+  max-width: 500px;
+  margin: 1rem auto;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+.table-vacaciones td {
+  padding: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.table-vacaciones input[type="date"],
+.table-vacaciones input[type="number"] {
+  padding: 0.3rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.table-vacaciones input[type="checkbox"] {
+  transform: scale(1.2);
+}
+
+.btn-small {
+  font-size: 1rem;
+  padding: 0.2rem;
+  background: none;
+  border: none;
+  color: #1976d2;
+  cursor: pointer;
+}
+
+.btn-small:hover {
+  color: #0d47a1;
+}
+
+.btn-small.btn-danger {
+  color: #d32f2f;
+}
+
+.btn-small.btn-danger:hover {
+  color: #b71c1c;
+}
+
+.add-vac {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.add-vac input {
+  padding: 0.3rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
 </style>
