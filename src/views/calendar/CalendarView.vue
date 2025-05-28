@@ -9,8 +9,8 @@
           <select id="workCenterFilter" v-model="filters.workCenterId" class="form-control"
             @change="onWorkCenterChange">
             <option :value="null">Seleccionar centro</option>
-            <option v-for="center in availableWorkCenters" :key="center.id" :value="center.id">
-              {{ center.name }}
+            <option v-for="center in workCentersStore.workCenters" :key="center.id" :value="center.id">
+              {{ center.nombre }}
             </option>
           </select>
         </div>
@@ -18,7 +18,7 @@
         <!-- Employee Filter -->
         <div class="form-group">
           <label for="employeeFilter">Empleado</label>
-          <select id="employeeFilter" v-model="filters.employeeId" class="form-control" :disabled="isEmployee"
+          <select id="employeeFilter" v-model="filters  .employeeId" class="form-control" :disabled="isEmployee"
             @change="onEmployeeChange">
             <option :value="null">Seleccionar empleado</option>
             <option v-for="emp in availableEmployees" :key="emp.usuario_id" :value="emp.usuario_id">
@@ -43,6 +43,20 @@
           </label>
         </div>
       </div>
+
+      <!-- Información del empleado seleccionado -->
+      <div v-if="selectedEmployee" class="employee-info">
+        <h2>Información del Empleado</h2>
+        <ul>
+          <li><strong>Nombre completo:</strong> {{ selectedEmployee.nombre_completo }}</li>
+          <li><strong>Centro de trabajo:</strong> {{ selectedEmployee.centro_trabajo }}</li>
+          <li><strong>Horas semanales asignadas:</strong> {{ selectedEmployee.jornada_semanal_horas }} h</li>
+          <li><strong>Horas anuales asignadas:</strong> {{ annualHours }} h</li>
+          <li><strong>Horas trabajadas (hasta {{ today }}):</strong> {{ workedHours }} h</li>
+          <li><strong>Horas restantes:</strong> {{ remainingHours }} h</li>
+          <li><strong>Días de vacaciones asignados:</strong> {{ selectedEmployee.dias_vacaciones_asignados }}</li>
+        </ul>
+      </div>
     </div>
 
     <div class="calendar-container">
@@ -64,34 +78,37 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import esLocale from '@fullcalendar/core/locales/es'
 
-/** ——— Setup stores & route ——— */
-const route            = useRoute()
-const authStore        = useAuthStore()
-const employeesStore   = useEmployeesStore()
+// Stores & route
+const route = useRoute()
+const authStore = useAuthStore()
+const employeesStore = useEmployeesStore()
 const workCentersStore = useWorkCentersStore()
 const { getCalendario, getEmpleado } = api
 
-/** ——— Refs & state ——— */
-const calendarEl      = ref(null)
-let calendar          = null
+// Refs & state
+const calendarEl = ref(null)
+let calendar = null
 
-const filters         = ref({
+const filters = ref({
   workCenterId: null,
-  employeeId:   null,
-  showHolidays:  true,
+  employeeId: null,
+  showHolidays: true,
   showVacations: true,
-  showWorkDays:  true
+  showWorkDays: true
 })
 
-const festivos      = ref([])
-const vacaciones    = ref([])
-const workSchedules = ref([])  // { dia_semana: 1–7, hora_entrada, hora_salida }
-const annualHours   = ref(0)   // jornada_anual_horas
+const festivos = ref([])
+const vacaciones = ref([])
+const workSchedules = ref([])
+const annualHours = ref(0)
 
-/** ——— Roles & computed lists ——— */
-const userRole   = computed(() => authStore.userRole)
-const isAdmin    = computed(() => userRole.value === 'admin')
-const isManager  = computed(() => ['admin','manager'].includes(userRole.value))
+// Today for display
+const today = new Date().toISOString().slice(0, 10)
+
+// Roles & computed lists
+const userRole = computed(() => authStore.userRole)
+const isAdmin = computed(() => userRole.value === 'admin')
+const isManager = computed(() => ['admin', 'manager'].includes(userRole.value))
 const isEmployee = computed(() => userRole.value === 'employee')
 
 const availableWorkCenters = computed(() => {
@@ -116,16 +133,46 @@ const availableEmployees = computed(() => {
   return list
 })
 
-/** ——— Helpers ——— */
+// Selected employee object
+const selectedEmployee = computed(() =>
+  availableEmployees.value.find(e => e.usuario_id === filters.value.employeeId) || null
+)
+
+// Compute worked and remaining hours
+const workedHours = computed(() => {
+  const year = new Date().getFullYear()
+  let total = 0
+  const fest = festivos.value.map(f => f.fecha)
+  const vacs = vacaciones.value.filter(v => v.aprobada)
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(year, 0, 1 + i)
+    if (d > new Date()) break
+    const ds = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    if (fest.includes(ds)) continue
+    if (vacs.some(v => ds >= v.fecha_inicio && ds <= v.fecha_fin)) continue
+    const dow = d.getDay() === 0 ? 7 : d.getDay()
+    const sched = workSchedules.value.find(h => h.dia_semana === dow)
+    if (sched) {
+      total += parseHours(sched.hora_salida) - parseHours(sched.hora_entrada)
+    }
+  }
+  return Math.round(total * 100) / 100
+})
+
+const remainingHours = computed(() =>
+  Math.max(0, Math.round((annualHours.value - workedHours.value) * 100) / 100)
+)
+
+/** Helpers */
 function parseHours(hms) {
-  const [h,m] = hms.split(':').map(Number)
-  return h + m/60
+  const [h, m] = hms.split(':').map(Number)
+  return h + m / 60
 }
 function pad(n) {
-  return n < 10 ? '0'+n : ''+n
+  return n < 10 ? '0' + n : '' + n
 }
 function dayNameToNumber(name) {
-  switch(name.toLowerCase()) {
+  switch (name.toLowerCase()) {
     case 'lunes': return 1
     case 'martes': return 2
     case 'miércoles':
@@ -139,34 +186,29 @@ function dayNameToNumber(name) {
   return null
 }
 
-/** ——— Carga festivos, vacaciones, horarios semanales y jornada anual ——— */
+/** Load data */
 async function loadAllData(empId) {
   if (!empId) {
-    festivos.value      = []
-    vacaciones.value    = []
+    festivos.value = []
+    vacaciones.value = []
     workSchedules.value = []
-    annualHours.value   = 0
+    annualHours.value = 0
     return
   }
-
-  // 1) Calendario completo (festivos, vacaciones, horarios)
   try {
     const data = await getCalendario(empId)
-    festivos.value      = data.festivos_aplicables   || []
-    vacaciones.value    = data.vacaciones_registradas || []
-    workSchedules.value = (data.horarios_semanales||[])
-      .map(h => ({
-        dia_semana:   dayNameToNumber(h.dia_semana),
-        hora_entrada: h.hora_entrada,
-        hora_salida:  h.hora_salida
-      }))
+    festivos.value = data.festivos_aplicables || []
+    vacaciones.value = data.vacaciones_registradas || []
+    workSchedules.value = (data.horarios_semanales || []).map(h => ({
+      dia_semana: dayNameToNumber(h.dia_semana),
+      hora_entrada: h.hora_entrada,
+      hora_salida: h.hora_salida
+    }))
   } catch {
-    festivos.value      = []
-    vacaciones.value    = []
+    festivos.value = []
+    vacaciones.value = []
     workSchedules.value = []
   }
-
-  // 2) Jornada anual desde /empleados/:id
   try {
     const emp = await getEmpleado(empId)
     annualHours.value = emp.jornada_anual_horas || 0
@@ -175,114 +217,78 @@ async function loadAllData(empId) {
   }
 }
 
-/** ——— Genera eventos para FullCalendar ——— */
+/** Generate events */
 function generateCalendarEvents() {
   const events = []
-
-  // A) Festivos
+  // Festivos
   if (filters.value.showHolidays) {
-    festivos.value.forEach(f => {
+    festivos.value.forEach(f => events.push({
+      title: f.descripcion, start: f.fecha, allDay: true,
+      classNames: ['holiday-event'], backgroundColor: '#ef5350', borderColor: '#ef5350',
+      extendedProps: { type: 'holiday' }
+    }))
+  }
+  // Vacaciones
+  if (filters.value.showVacations) {
+    vacaciones.value.filter(v => v.aprobada).forEach(v => {
+      const end = new Date(v.fecha_fin)
+      end.setDate(end.getDate() + 1)
       events.push({
-        title:         f.descripcion,
-        start:         f.fecha,
-        allDay:        true,
-        classNames:    ['holiday-event'],
-        backgroundColor: '#ef5350',
-        borderColor:     '#ef5350',
-        extendedProps:   { type:'holiday' }
+        title: 'Vacaciones', start: v.fecha_inicio, end: `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`,
+        allDay: true, classNames: ['vacation-event'], backgroundColor: '#f1af26', borderColor: '#f1af26',
+        extendedProps: { type: 'vacation', days: v.dias_solicitados }
       })
     })
   }
-
-  // B) Vacaciones aprobadas
-  if (filters.value.showVacations) {
-    vacaciones.value
-      .filter(v => v.aprobada)
-      .forEach(v => {
-        const end = new Date(v.fecha_fin)
-        end.setDate(end.getDate()+1)
-        events.push({
-          title:           'Vacaciones',
-          start:           v.fecha_inicio,
-          end:             end.toISOString().slice(0,10),
-          allDay:          true,
-          classNames:      ['vacation-event'],
-          backgroundColor: '#f1af26',
-          borderColor:     '#f1af26',
-          extendedProps:   { type:'vacation', days:v.dias_solicitados }
-        })
-      })
-  }
-
-  // C) Días laborables hasta tope anual
+  // Días laborables
   if (filters.value.showWorkDays) {
-    const year      = new Date().getFullYear()
-    let accumulated = 0
-
+    const year = new Date().getFullYear()
+    let acc = 0
+    const fest = festivos.value.map(f => f.fecha)
+    const vacs = vacaciones.value.filter(v => v.aprobada)
     for (let i = 0; i < 365; i++) {
-      const date = new Date(year,0,1+i)
-      if (date.getFullYear() !== year) break
-
-      const Y  = date.getFullYear()
-      const M  = pad(date.getMonth()+1)
-      const D  = pad(date.getDate())
-      const ds = `${Y}-${M}-${D}`
-
-      // Salta festivos/vacaciones
-      const isHoliday  = festivos.value.some(f => f.fecha === ds)
-      const isVacation = vacaciones.value
-        .filter(v => v.aprobada)
-        .some(v => ds >= v.fecha_inicio && ds <= v.fecha_fin)
-      if (isHoliday || isVacation) continue
-
-      // Busca horario para ese día de la semana
-      const dow = date.getDay()             // JS: 0=Dom…6=Sáb
-      const backendDay = dow===0?7:dow      // 1=Lun…7=Dom
-      const sched = workSchedules.value.find(h => h.dia_semana===backendDay)
+      const d = new Date(year, 0, 1 + i)
+      if (d.getFullYear() !== year) break
+      const ds = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+      if (fest.includes(ds)) continue
+      if (vacs.some(v => ds >= v.fecha_inicio && ds <= v.fecha_fin)) continue
+      const dow = d.getDay() === 0 ? 7 : d.getDay()
+      const sched = workSchedules.value.find(h => h.dia_semana === dow)
       if (!sched) continue
-
       const hrs = parseHours(sched.hora_salida) - parseHours(sched.hora_entrada)
-      if (accumulated + hrs > annualHours.value) break
-
+      if (acc + hrs > annualHours.value) break
       events.push({
-        title:           `${sched.hora_entrada} - ${sched.hora_salida}`,
-        start:           ds,
-        allDay:          true,
-        classNames:      ['workday-event'],
-        backgroundColor: '#4caf50',
-        borderColor:     '#4caf50',
-        extendedProps:   { type:'workday', hours:hrs }
+        title: `${sched.hora_entrada} - ${sched.hora_salida}`,
+        start: ds, allDay: true,
+        classNames: ['workday-event'], backgroundColor: '#4caf50', borderColor: '#4caf50',
+        extendedProps: { type: 'workday', hours: hrs }
       })
-      accumulated += hrs
+      acc += hrs
     }
   }
-
   return events
 }
 
-/** ——— Inicializar y refrescar FullCalendar ——— */
+/** Calendar init & refresh */
 function initializeCalendar() {
   if (!calendarEl.value) return
   calendar = new Calendar(calendarEl.value, {
-    plugins:       [dayGridPlugin, interactionPlugin],
-    initialView:   'dayGridMonth',
-    headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth' },
-    locale:        'es',
-    locales:       [esLocale],
-    firstDay:      1,
-    height:        'auto',
-    events:        generateCalendarEvents()
+    plugins: [dayGridPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
+    locale: 'es', locales: [esLocale],
+    firstDay: 1, height: 'auto',
+    events: generateCalendarEvents()
   })
   calendar.render()
 }
-
 function refreshCalendar() {
   if (!calendar) return
   calendar.removeAllEvents()
   calendar.addEventSource(generateCalendarEvents())
 }
 
-/** ——— Reactividad ——— */
+// Watchers
 watch(() => filters.value.employeeId, async id => {
   await loadAllData(id)
   refreshCalendar()
@@ -291,31 +297,27 @@ watch(() => filters.value.workCenterId, () => {
   filters.value.employeeId = null
   refreshCalendar()
 })
-watch(() => [filters.value.showHolidays,filters.value.showVacations,filters.value.showWorkDays],
-      () => refreshCalendar())
+watch(() => [filters.value.showHolidays, filters.value.showVacations, filters.value.showWorkDays],
+  () => refreshCalendar())
 
-// Placeholders para @change
-function onWorkCenterChange() {}
-function onEmployeeChange() {}
+// Placeholders
+function onWorkCenterChange() { }
+function onEmployeeChange() { }
 
-/** ——— Montaje inicial ——— */
+// Mounted
 onMounted(async () => {
   await employeesStore.fetchEmployees()
-
   const eid = route.params.employeeId
   if (isAdmin.value && eid == null) {
-    // admin sin ruta: primer empleado
     const firstEmp = availableEmployees.value[0]
     filters.value.employeeId = firstEmp ? firstEmp.usuario_id : null
   } else {
-    // ruta o rol empleado
     filters.value.employeeId = eid != null
       ? Number(eid)
       : isEmployee.value
         ? authStore.user.employeeId
         : null
   }
-
   await loadAllData(filters.value.employeeId)
   initializeCalendar()
 })
@@ -350,6 +352,26 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+}
+
+.employee-info {
+  margin-top: 1rem;
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.employee-info h2 {
+  margin-bottom: 0.5rem;
+}
+
+.employee-info ul {
+  list-style: none;
+  padding: 0;
+}
+
+.employee-info li {
+  margin: 0.25rem 0;
 }
 
 .calendar-container {
