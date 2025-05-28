@@ -64,35 +64,41 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import esLocale from '@fullcalendar/core/locales/es'
 
-const route = useRoute()
-const authStore = useAuthStore()
-const employeesStore = useEmployeesStore()
+/** ——— Setup stores & route ——— */
+const route            = useRoute()
+const authStore        = useAuthStore()
+const employeesStore   = useEmployeesStore()
 const workCentersStore = useWorkCentersStore()
-const { getCalendario, getHorariosEmpleado, getEmpleado } = api
+const { getCalendario, getEmpleado } = api
 
-const calendarEl = ref(null)
-let calendar = null
+/** ——— Refs & state ——— */
+const calendarEl      = ref(null)
+let calendar          = null
 
-const filters = ref({
+const filters         = ref({
   workCenterId: null,
-  employeeId: null,
-  showHolidays: true,
+  employeeId:   null,
+  showHolidays:  true,
   showVacations: true,
-  showWorkDays: true
+  showWorkDays:  true
 })
 
-const userRole = computed(() => authStore.userRole)
-const isAdmin = computed(() => userRole.value === 'admin')
-const isManager = computed(() => ['admin', 'manager'].includes(userRole.value))
+const festivos      = ref([])
+const vacaciones    = ref([])
+const workSchedules = ref([])  // { dia_semana: 1–7, hora_entrada, hora_salida }
+const annualHours   = ref(0)   // jornada_anual_horas
+
+/** ——— Roles & computed lists ——— */
+const userRole   = computed(() => authStore.userRole)
+const isAdmin    = computed(() => userRole.value === 'admin')
+const isManager  = computed(() => ['admin','manager'].includes(userRole.value))
 const isEmployee = computed(() => userRole.value === 'employee')
 
 const availableWorkCenters = computed(() => {
   if (isAdmin.value) return workCentersStore.workCenters
   if (isManager.value) {
     const wc = authStore.user?.workCenter
-    return wc
-      ? workCentersStore.workCenters.filter(c => c.id === wc)
-      : []
+    return wc ? workCentersStore.workCenters.filter(c => c.id === wc) : []
   }
   return []
 })
@@ -105,39 +111,62 @@ const availableEmployees = computed(() => {
   let list = employeesStore.employees
   if (filters.value.workCenterId) {
     const centro = workCentersStore.getWorkCenterById(filters.value.workCenterId)
-    if (centro) {
-      list = list.filter(e => e.centro_trabajo === centro.name)
-    }
+    if (centro) list = list.filter(e => e.centro_trabajo === centro.name)
   }
   return list
 })
 
-const festivos = ref([])
-const vacaciones = ref([])
-const workSchedules = ref([])
-const annualHours = ref(0)
+/** ——— Helpers ——— */
+function parseHours(hms) {
+  const [h,m] = hms.split(':').map(Number)
+  return h + m/60
+}
+function pad(n) {
+  return n < 10 ? '0'+n : ''+n
+}
+function dayNameToNumber(name) {
+  switch(name.toLowerCase()) {
+    case 'lunes': return 1
+    case 'martes': return 2
+    case 'miércoles':
+    case 'miercoles': return 3
+    case 'jueves': return 4
+    case 'viernes': return 5
+    case 'sábado':
+    case 'sabado': return 6
+    case 'domingo': return 7
+  }
+  return null
+}
 
+/** ——— Carga festivos, vacaciones, horarios semanales y jornada anual ——— */
 async function loadAllData(empId) {
   if (!empId) {
-    festivos.value = []
-    vacaciones.value = []
+    festivos.value      = []
+    vacaciones.value    = []
     workSchedules.value = []
-    annualHours.value = 0
+    annualHours.value   = 0
     return
   }
+
+  // 1) Calendario completo (festivos, vacaciones, horarios)
   try {
     const data = await getCalendario(empId)
-    festivos.value = data.festivos_aplicables || []
-    vacaciones.value = data.vacaciones_registradas || []
+    festivos.value      = data.festivos_aplicables   || []
+    vacaciones.value    = data.vacaciones_registradas || []
+    workSchedules.value = (data.horarios_semanales||[])
+      .map(h => ({
+        dia_semana:   dayNameToNumber(h.dia_semana),
+        hora_entrada: h.hora_entrada,
+        hora_salida:  h.hora_salida
+      }))
   } catch {
-    festivos.value = []
-    vacaciones.value = []
-  }
-  try {
-    workSchedules.value = await getHorariosEmpleado(empId)
-  } catch {
+    festivos.value      = []
+    vacaciones.value    = []
     workSchedules.value = []
   }
+
+  // 2) Jornada anual desde /empleados/:id
   try {
     const emp = await getEmpleado(empId)
     annualHours.value = emp.jornada_anual_horas || 0
@@ -146,92 +175,83 @@ async function loadAllData(empId) {
   }
 }
 
-function parseHours(hms) {
-  const [h, m] = hms.split(':').map(Number)
-  return h + m / 60
-}
-
-function pad(n) {
-  return n < 10 ? '0' + n : '' + n
-}
-
+/** ——— Genera eventos para FullCalendar ——— */
 function generateCalendarEvents() {
   const events = []
 
-  // 1) Festivos
+  // A) Festivos
   if (filters.value.showHolidays) {
     festivos.value.forEach(f => {
       events.push({
-        title: f.descripcion,
-        start: f.fecha,
-        allDay: true,
-        classNames: ['holiday-event'],
+        title:         f.descripcion,
+        start:         f.fecha,
+        allDay:        true,
+        classNames:    ['holiday-event'],
         backgroundColor: '#ef5350',
-        borderColor: '#ef5350',
-        extendedProps: { type: 'holiday' }
+        borderColor:     '#ef5350',
+        extendedProps:   { type:'holiday' }
       })
     })
   }
 
-  // 2) Vacaciones aprobadas
+  // B) Vacaciones aprobadas
   if (filters.value.showVacations) {
     vacaciones.value
       .filter(v => v.aprobada)
       .forEach(v => {
         const end = new Date(v.fecha_fin)
-        end.setDate(end.getDate() + 1)
+        end.setDate(end.getDate()+1)
         events.push({
-          title: 'Vacaciones',
-          start: v.fecha_inicio,
-          end: end.toISOString().slice(0, 10),
-          allDay: true,
-          classNames: ['vacation-event'],
+          title:           'Vacaciones',
+          start:           v.fecha_inicio,
+          end:             end.toISOString().slice(0,10),
+          allDay:          true,
+          classNames:      ['vacation-event'],
           backgroundColor: '#f1af26',
-          borderColor: '#f1af26',
-          extendedProps: { type: 'vacation', days: v.dias_solicitados }
+          borderColor:     '#f1af26',
+          extendedProps:   { type:'vacation', days:v.dias_solicitados }
         })
       })
   }
 
-  // 3) Días laborables reseteando si hay vacaciones
+  // C) Días laborables hasta tope anual
   if (filters.value.showWorkDays) {
-    const year = new Date().getFullYear()
+    const year      = new Date().getFullYear()
     let accumulated = 0
 
     for (let i = 0; i < 365; i++) {
-      const date = new Date(year, 0, 1 + i)
+      const date = new Date(year,0,1+i)
       if (date.getFullYear() !== year) break
 
-      const Y = date.getFullYear()
-      const M = pad(date.getMonth() + 1)
-      const D = pad(date.getDate())
+      const Y  = date.getFullYear()
+      const M  = pad(date.getMonth()+1)
+      const D  = pad(date.getDate())
       const ds = `${Y}-${M}-${D}`
 
-      const dow = date.getDay()                // 0=Dom…6=Sáb
-      const backendDay = dow === 0 ? 7 : dow   // 1=Lun…7=Dom
-
-      const isHoliday = festivos.value.some(f => f.fecha === ds)
+      // Salta festivos/vacaciones
+      const isHoliday  = festivos.value.some(f => f.fecha === ds)
       const isVacation = vacaciones.value
         .filter(v => v.aprobada)
         .some(v => ds >= v.fecha_inicio && ds <= v.fecha_fin)
-
-      // No miramos horario si es festivo o vacación
       if (isHoliday || isVacation) continue
 
-      const sched = workSchedules.value.find(h => h.dia_semana === backendDay)
+      // Busca horario para ese día de la semana
+      const dow = date.getDay()             // JS: 0=Dom…6=Sáb
+      const backendDay = dow===0?7:dow      // 1=Lun…7=Dom
+      const sched = workSchedules.value.find(h => h.dia_semana===backendDay)
       if (!sched) continue
 
       const hrs = parseHours(sched.hora_salida) - parseHours(sched.hora_entrada)
       if (accumulated + hrs > annualHours.value) break
 
       events.push({
-        title: `${sched.hora_entrada} - ${sched.hora_salida}`,
-        start: ds,
-        allDay: true,
-        classNames: ['workday-event'],
+        title:           `${sched.hora_entrada} - ${sched.hora_salida}`,
+        start:           ds,
+        allDay:          true,
+        classNames:      ['workday-event'],
         backgroundColor: '#4caf50',
-        borderColor: '#4caf50',
-        extendedProps: { type: 'workday', hours: hrs }
+        borderColor:     '#4caf50',
+        extendedProps:   { type:'workday', hours:hrs }
       })
       accumulated += hrs
     }
@@ -240,26 +260,29 @@ function generateCalendarEvents() {
   return events
 }
 
+/** ——— Inicializar y refrescar FullCalendar ——— */
 function initializeCalendar() {
   if (!calendarEl.value) return
   calendar = new Calendar(calendarEl.value, {
-    plugins: [dayGridPlugin, interactionPlugin],
-    initialView: 'dayGridMonth',
-    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth' },
-    locale: 'es',
-    locales: [esLocale],
-    firstDay: 1,
-    height: 'auto',
-    events: generateCalendarEvents()
+    plugins:       [dayGridPlugin, interactionPlugin],
+    initialView:   'dayGridMonth',
+    headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth' },
+    locale:        'es',
+    locales:       [esLocale],
+    firstDay:      1,
+    height:        'auto',
+    events:        generateCalendarEvents()
   })
   calendar.render()
 }
 
 function refreshCalendar() {
+  if (!calendar) return
   calendar.removeAllEvents()
   calendar.addEventSource(generateCalendarEvents())
 }
 
+/** ——— Reactividad ——— */
 watch(() => filters.value.employeeId, async id => {
   await loadAllData(id)
   refreshCalendar()
@@ -268,17 +291,31 @@ watch(() => filters.value.workCenterId, () => {
   filters.value.employeeId = null
   refreshCalendar()
 })
-watch(() => [filters.value.showHolidays, filters.value.showVacations, filters.value.showWorkDays],
-  () => refreshCalendar())
+watch(() => [filters.value.showHolidays,filters.value.showVacations,filters.value.showWorkDays],
+      () => refreshCalendar())
 
+// Placeholders para @change
+function onWorkCenterChange() {}
+function onEmployeeChange() {}
+
+/** ——— Montaje inicial ——— */
 onMounted(async () => {
   await employeesStore.fetchEmployees()
+
   const eid = route.params.employeeId
-  filters.value.employeeId = eid != null
-    ? Number(eid)
-    : isEmployee.value
-      ? authStore.user.employeeId
-      : null
+  if (isAdmin.value && eid == null) {
+    // admin sin ruta: primer empleado
+    const firstEmp = availableEmployees.value[0]
+    filters.value.employeeId = firstEmp ? firstEmp.usuario_id : null
+  } else {
+    // ruta o rol empleado
+    filters.value.employeeId = eid != null
+      ? Number(eid)
+      : isEmployee.value
+        ? authStore.user.employeeId
+        : null
+  }
+
   await loadAllData(filters.value.employeeId)
   initializeCalendar()
 })
