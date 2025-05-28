@@ -1,8 +1,8 @@
 <template>
   <div class="centros-container">
     <div v-if="workCenter">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold">{{ workCenter.nombre }}</h1>
+      <div class="cabecera-detalle">
+        <h1 class="titulo-principal">{{ workCenter.nombre }}</h1>
         <router-link
           to="/work-centers"
           class="btn btn-outline"
@@ -13,32 +13,32 @@
 
       <!-- Detalles del centro -->
       <div class="card">
-        <h2 class="text-xl font-semibold mb-4">Información del Centro</h2>
+        <h2 class="titulo-seccion">Información del Centro</h2>
 
         <div class="forms-grid">
           <div>
-            <p class="text-sm text-gray-500">ID</p>
-            <p class="font-medium">{{ workCenter.id }}</p>
+            <p class="etiqueta-secundaria">ID</p>
+            <p class="texto-destacado">{{ workCenter.id }}</p>
           </div>
 
           <div>
-            <p class="text-sm text-gray-500">Nombre</p>
-            <p class="font-medium">{{ workCenter.nombre }}</p>
+            <p class="etiqueta-secundaria">Nombre</p>
+            <p class="texto-destacado">{{ workCenter.nombre }}</p>
           </div>
 
           <div>
-            <p class="text-sm text-gray-500">Ubicación</p>
-            <p class="font-medium">{{ workCenter.ubicacion }}</p>
+            <p class="etiqueta-secundaria">Ubicación</p>
+            <p class="texto-destacado">{{ workCenter.ubicacion }}</p>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-else class="text-center py-10">
-      <p class="text-xl text-gray-600">Centro de trabajo no encontrado</p>
+    <div v-else class="mensaje-vacio">
+      <p class="texto-vacio">Centro de trabajo no encontrado</p>
       <router-link
         to="/work-centers"
-        class="btn mt-4 inline-block"
+        class="btn btn-volver"
       >
         Volver a la lista
       </router-link>
@@ -66,7 +66,7 @@ onMounted(() => {
 })
 </script>
 <style scoped>
-  .centros-container {
+.centros-container {
   padding: 1.25rem;
 }
 
@@ -140,4 +140,51 @@ onMounted(() => {
   background-color: #b71c1c;
 }
 
-  </style>
+.cabecera-detalle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.titulo-principal {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #1976d2;
+}
+
+.titulo-seccion {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.etiqueta-secundaria {
+  font-size: 0.875rem;
+  color: #777;
+  margin-bottom: 0.25rem;
+}
+
+.texto-destacado {
+  font-weight: 500;
+}
+
+.texto-vacio {
+  font-size: 1.25rem;
+  color: #666;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.btn-volver {
+  display: inline-block;
+  margin-top: 1rem;
+}
+
+.mensaje-vacio {
+  text-align: center;
+  padding: 2rem 0;
+}
+</style>

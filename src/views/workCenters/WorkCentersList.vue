@@ -1,35 +1,35 @@
 <template>
   <div class="centros-container">
-    <h1 class="text-2xl font-bold mb-6 text-primary">Centros de Trabajo</h1>
+    <h1 class="titulo-principal">Centros de Trabajo</h1>
 
     <!-- Formulario para añadir nuevo centro -->
     <div class="card">
-      <h2 class="text-xl font-semibold mb-4 border-b pb-2">Añadir Nuevo Centro</h2>
+      <h2 class="titulo-seccion">Añadir Nuevo Centro</h2>
 
       <form @submit.prevent="addNewWorkCenter" class="form-grid">
         <div class="forms-grid">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <label class="etiqueta">Nombre</label>
             <input
               v-model="newCenter.nombre"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              class="input-texto"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+            <label class="etiqueta">Ubicación</label>
             <input
               v-model="newCenter.ubicacion"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              class="input-texto"
             />
           </div>
         </div>
 
-        <div class="flex justify-end">
+        <div class="alinear-derecha">
           <button type="submit" class="btn">
             Añadir Centro
           </button>
@@ -47,7 +47,7 @@
         >
           <div>
             <strong>#{{ center.id }}</strong> -
-            <router-link :to="`/work-centers/${center.id}`" class="text-primary hover:text-primary-dark">
+            <router-link :to="`/work-centers/${center.id}`" class="enlace-detalle">
               {{ center.nombre }}
             </router-link>
             <span>({{ center.ubicacion }})</span>
@@ -58,18 +58,18 @@
           </div>
         </li>
 
-        <li v-if="workCentersStore.workCenters.length === 0" class="text-gray-500 text-center py-4">
+        <li v-if="workCentersStore.workCenters.length === 0" class="mensaje-vacio">
           No hay centros de trabajo registrados
         </li>
       </ul>
     </div>
 
     <!-- Modal de edición -->
-    <div v-if="showEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="card w-full max-w-md mx-4">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-semibold">Editar Centro de Trabajo</h2>
-          <button @click="closeEditModal" class="text-gray-500 hover:text-gray-700">
+    <div v-if="showEditModal" class="modal-overlay">
+      <div class="card modal">
+        <div class="modal-encabezado">
+          <h2 class="titulo-seccion">Editar Centro de Trabajo</h2>
+          <button @click="closeEditModal" class="cerrar-modal">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -78,26 +78,26 @@
 
         <form @submit.prevent="updateWorkCenter" class="form-grid">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+            <label class="etiqueta">Nombre</label>
             <input
               v-model="editingCenter.nombre"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              class="input-texto"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+            <label class="etiqueta">Ubicación</label>
             <input
               v-model="editingCenter.ubicacion"
               type="text"
               required
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+              class="input-texto"
             />
           </div>
 
-          <div class="flex justify-end space-x-3 pt-4">
+          <div class="alinear-derecha espaciado-botones">
             <button
               type="button"
               @click="closeEditModal"
@@ -219,8 +219,50 @@ async function confirmDelete(center) {
 }
 </script>
  <style scoped>
-  .centros-container {
+.centros-container {
   padding: 1.25rem;
+}
+
+.titulo-principal {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  color: #1976d2;
+}
+
+.titulo-seccion {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #ddd;
+}
+
+.etiqueta {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.input-texto {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 0.375rem;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.alinear-derecha {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.espaciado-botones {
+  gap: 0.75rem;
+  display: flex;
+  padding-top: 1rem;
 }
 
 .card {
@@ -229,6 +271,17 @@ async function confirmDelete(center) {
   box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
   padding: 1.25rem;
   margin-bottom: 2rem;
+}
+
+.forms-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.form-grid {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .centros-list ul {
@@ -245,19 +298,18 @@ async function confirmDelete(center) {
   border-bottom: 1px solid #eee;
 }
 
+.enlace-detalle {
+  color: #1976d2;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.enlace-detalle:hover {
+  color: #125aa9;
+}
+
 .action-buttons {
   display: flex;
-  gap: 0.75rem;
-}
-
-.forms-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-
-.form-grid {
-  display: grid;
   gap: 0.75rem;
 }
 
@@ -278,6 +330,9 @@ async function confirmDelete(center) {
   background: transparent;
   border: 1px solid #1976d2;
   color: #1976d2;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
 }
 
 .btn-outline:hover {
@@ -292,7 +347,50 @@ async function confirmDelete(center) {
 .btn-danger:hover {
   background-color: #b71c1c;
 }
-label{
-  margin:0.5rem
+
+.mensaje-vacio {
+  text-align: center;
+  color: #888;
+  padding: 2rem 0;
+  font-size: 1rem;
 }
-  </style>
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal {
+  max-width: 500px;
+  width: 100%;
+  margin: 0 1rem;
+}
+
+.modal-encabezado {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.cerrar-modal {
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+}
+
+.cerrar-modal:hover {
+  color: #000;
+}
+
+label {
+  margin: 0.5rem;
+}
+</style>
