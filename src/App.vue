@@ -1,24 +1,50 @@
 <script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import Calendar from './components/Calendar.vue'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAuthStore } from './stores/auth'
+import Navbar from './components/layout/Navbar.vue'
+import Sidebar from './components/layout/Sidebar.vue'
+
+const route = useRoute()
+const authStore = useAuthStore()
+
+const showNavbar = computed(() => !route.meta.hideNavbar)
+const showSidebar = computed(() => authStore.isAuthenticated && !route.meta.hideSidebar)
 </script>
 
 <template>
-
-  <Calendar />
+  <div class="app-container">
+    <Navbar v-if="showNavbar" />
+    <div class="main-layout">
+      <Sidebar v-if="showSidebar" />
+      <main class="content">
+        <router-view />
+      </main>
+    </div>
+  </div>
 </template>
 
-<style scoped>
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
+<style>
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+
+.main-layout {
+  display: flex;
+  flex: 1;
 }
-.logo.vue:hover {
-  filter: drop-shadow(0 0 2em #42b883aa);
+
+.content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .main-layout {
+    flex-direction: column;
+  }
 }
 </style>
