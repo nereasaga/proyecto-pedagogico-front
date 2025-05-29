@@ -53,7 +53,19 @@ export const api = {
 
 
   // Work centers
-  getWorkCenters: () => request('/centros'),
+    getWorkCenters: () => request('/centros'), // Already exists for GET all
+    getWorkCenter: (id) => request(`/centros/${id}`), // New: GET single
+    createWorkCenter: (data) => request('/centros', { // New: POST
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+    updateWorkCenter: (id, data) => request(`/centros/${id}`, { // New: PUT
+        method: 'PUT',
+        body: JSON.stringify(data)
+    }),
+    deleteWorkCenter: (id) => request(`/centros/${id}`, { // New: DELETE
+        method: 'DELETE'
+    }),
 
   // Festivos
   getFestivos: () => request('/festivos'),
@@ -68,6 +80,8 @@ export const api = {
   deleteFestivo: (id) => request(`/festivos/${id}`, {
     method: 'DELETE'
   }),
+  // tipos de festivo
+   getTiposFestivo: () => request('/tipos-festivo'), // Nuevo método añadido
 
 // -------- Vacaciones ----------------------------------------------
   getVacaciones     : (idEmp)   => request(`/vacaciones/empleado/${idEmp}`),
@@ -75,4 +89,5 @@ export const api = {
   updateVacaciones    : (id,data) => request(`/vacaciones/${id}`,     { method:'PUT',  body:JSON.stringify(data)}),
   deleteVacaciones    :  id       => request(`/vacaciones/${id}`,     { method:'DELETE'}),
 
+  getHorariosEmpleado: (id) => request(`/horariosempleado/${id}`),
 }

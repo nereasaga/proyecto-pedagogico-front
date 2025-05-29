@@ -77,8 +77,8 @@ const handleLogin = async () => {
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h1>Workforce Calendar</h1>
-        <p>Sistema de Gestión de Calendarios Laborales</p>
+        <h1>Shift F5</h1>
+        <p>Sistema de Gestión de Calendarios Laborales <br> Somos F5</p>
       </div>
       
       <form @submit.prevent="handleLogin" class="login-form">

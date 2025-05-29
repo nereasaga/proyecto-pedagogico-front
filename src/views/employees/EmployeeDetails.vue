@@ -18,7 +18,7 @@
           <label>Centro de trabajo</label>
           <select v-model="form.centro_trabajo" class="form-control">
             <option disabled value="">Seleccione un centro</option>
-            <option v-for="c in centrosTrabajo" :key="c.id" :value="c.id">
+            <option v-for="c in centrosTrabajo" :key="c.id" :value="c.nombre">
               {{ c.nombre }}
             </option>
           </select>
@@ -27,7 +27,7 @@
           <label>Rol</label>
           <select v-model="form.rol" class="form-control">
             <option disabled value="">Seleccione un rol</option>
-            <option v-for="r in roles" :key="r.id" :value="r.id">
+            <option v-for="r in roles" :key="r.id" :value="r.nombre">
               {{ r.nombre }}
             </option>
           </select>
@@ -192,7 +192,10 @@ async function loadData () {
     const centrosData = await api.getWorkCenters()
     centrosTrabajo.value = centrosData
 
-    const horariosData = await api.getSchedules(empleadoId.value)
+    form.rol = emp.rol
+    form.centro_trabajo = emp.centro_trabajo
+
+    const horariosData = await api.getSchedules(emp.usuario_id)
     console.log('[loadData] horarios:', horariosData)
     horarios.value = Array.isArray(horariosData) ? horariosData.map(h => ({ ...h })) : []
 
@@ -364,12 +367,18 @@ async function remove () {
   margin-top: 1rem; 
 }
 
-.modal{
-  padding:2rem;
-  border:none;
-  border-radius:8px;
-  box-shadow:0 8px 20px rgba(0,0,0,.2);
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 2rem;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.2);
   width: min(90vw, 600px);
+  z-index: 1000;
+  background: white;
 }
 
 .table-horarios td,
