@@ -67,7 +67,7 @@
 
         <div class="actions">
           <button :disabled="saving" class="btn">Guardar cambios</button>
-          <button type="button" class="btn btn-outline" @click="remove">Eliminar empleado</button>
+          <button type="button" class="btn btn-danger" @click="remove">Eliminar empleado</button>
         </div>
       </form>
 
@@ -430,6 +430,10 @@ async function remove () {
 
 .btn-small.btn-danger:hover {
   color: #b71c1c;
+}
+
+.btn-danger {
+  background-color: #d32f2f;
 }
 
 .add-vac {
