@@ -42,14 +42,23 @@ const logout = () => {
         <span class="user-name">{{ userName }}</span>
         <span class="user-role">{{ userRole }}</span>
         <div class="user-dropdown">
-          <button class="btn-icon">
-            <span class="material-icons">O</span>
-          </button>
-          <div class="dropdown-menu">
-            <router-link to="/profile" class="dropdown-item">Perfil</router-link>
-            <button @click="logout" class="dropdown-item">Cerrar sesión</button>
-          </div>
-        </div>
+  <button class="btn-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" 
+         width="24" height="24" 
+         viewBox="0 0 24 24" 
+         fill="none" stroke="currentColor" 
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round" 
+         class="icon-user">
+      <path d="M20 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M4 21v-2a4 4 0 0 1 3-3.87" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  </button>
+  <div class="dropdown-menu">
+    <router-link to="/profile" class="dropdown-item">Perfil</router-link>
+    <button @click="logout" class="dropdown-item">Cerrar sesión</button>
+  </div>
+</div>
       </div>
     </div>
   </nav>
@@ -116,23 +125,25 @@ const logout = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-xs);
+  padding: 8px 12px; 
+  min-width: 60px;
+  min-height: 60px;
 }
 
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 5px);
   right: 0;
   background-color: white;
   border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-md);
   width: 200px;
   z-index: 100;
-  display: none;
+  display: none; 
+  flex-direction: column;
 }
 
 .user-dropdown:hover .dropdown-menu {
-  display: block;
+  display: flex;
 }
 
 .dropdown-item {
@@ -142,7 +153,7 @@ const logout = () => {
   text-decoration: none;
   transition: background-color var(--transition-fast);
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   border: none;
   width: 100%;
   background: transparent;

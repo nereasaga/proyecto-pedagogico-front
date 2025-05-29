@@ -13,7 +13,7 @@ const toggleSidebar = () => {
   showSidebar.value = !showSidebar.value
 }
 
-// 🔁 Forzar sidebar visible en pantallas grandes
+
 const handleResize = () => {
   if (window.innerWidth > 768) {
     showSidebar.value = true
@@ -22,7 +22,7 @@ const handleResize = () => {
 
 onMounted(() => {
   window.addEventListener('resize', handleResize)
-  handleResize() // asegúrate de ajustar estado al montar
+  handleResize() 
 })
 
 onBeforeUnmount(() => {
@@ -82,7 +82,6 @@ const isActive = (path) => {
   width: 250px;
   background-color: white;
   box-shadow: var(--shadow-sm);
-  height: calc(100vh - 60px);
   position: sticky;
   top: 60px;
   overflow-y: auto;
