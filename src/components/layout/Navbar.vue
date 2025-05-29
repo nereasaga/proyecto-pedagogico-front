@@ -58,9 +58,9 @@ const logout = () => {
 <style>
 .navbar {
   height: 60px;
+  position: relative; 
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: 0 var(--spacing-lg);
   background-color: var(--color-primary);
   color: white;
@@ -68,21 +68,22 @@ const logout = () => {
 }
 
 .navbar-brand {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 600;
+  font-size: 1.25rem;
   display: flex;
   align-items: center;
 }
 
 .navbar-logo {
-  display: flex;
-  align-items: center;
   color: white;
-  font-weight: 600;
-  font-size: 1.25rem;
   text-decoration: none;
 }
 
 .navbar-menu {
-  display: flex;
+  margin-left: auto; 
   align-items: center;
 }
 
