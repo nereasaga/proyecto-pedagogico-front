@@ -66,7 +66,7 @@
         <button type="button" class="btn btn-outline" @click="openVacaciones">Gestionar vacaciones</button>
 
         <div class="actions">
-          <button :disabled="saving" class="btn">Guardar cambios</button>
+          <button :disabled="saving" class="btn btn-azul">Guardar cambios</button>
           <button type="button" class="btn btn-danger" @click="remove">Eliminar empleado</button>
         </div>
       </form>
@@ -434,6 +434,10 @@ async function remove () {
 
 .btn-danger {
   background-color: #d32f2f;
+}
+
+.btn-azul {
+  background-color: #0d47a1;
 }
 
 .add-vac {
