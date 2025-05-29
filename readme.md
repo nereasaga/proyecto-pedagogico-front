@@ -28,7 +28,7 @@ Interfaz de usuario para el sistema de gestión de calendarios laborales, que pe
 
 1. Clonar el repositorio:
 ```bash
-git clone https://github.com/tu-usuario/proyecto-pedagogico.git
+git clone https://github.com/nereasaga/proyecto-pedagogico-front
 cd proyecto-pedagogico-front
 ```
 
