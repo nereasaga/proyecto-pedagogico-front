@@ -33,6 +33,7 @@ const logout = () => {
   <nav class="navbar">
     <div class="navbar-brand">
       <router-link to="/" class="navbar-logo">
+        <img src="@/assets/logo.png" alt="Logo" class="navbar-logo-img" />
         <span>Shift F5</span>
       </router-link>
     </div>
@@ -89,6 +90,13 @@ const logout = () => {
 .navbar-logo {
   color: white;
   text-decoration: none;
+}
+
+.navbar-logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(91%) sepia(6%) saturate(2595%) hue-rotate(193deg) brightness(107%) contrast(91%);
 }
 
 .navbar-menu {
