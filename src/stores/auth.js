@@ -93,7 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const token = ref(localStorage.getItem('auth_token') || null)
   
-  // For demo purposes, we'll create some mock users
+  // Mock users
   const mockUsers = [
     { 
       id: 1, 
@@ -109,16 +109,16 @@ export const useAuthStore = defineStore('auth', () => {
       password: 'manager123', 
       name: 'Area Manager', 
       role: 'manager',
-      workCenter: 1 // Barcelona work center
+      workCenter: 1 
     },
     { 
       id: 3, 
       username: 'employee', 
       password: 'employee123', 
-      name: 'John Employee', 
+      name: 'Empleado', 
       role: 'employee',
-      workCenter: 1, // Barcelona work center
-      employeeId: 1 // Reference to employee record
+      workCenter: 1, 
+      employeeId: 1 
     }
   ]
 
@@ -137,7 +137,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Actions
   function login(username, password) {
-    // Find user in mock data (in real app, this would be an API call)
+    // Find user in mock data 
     const foundUser = mockUsers.find(
       u => u.username === username && u.password === password
     )
@@ -167,8 +167,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Simulate checking if token is valid on page refresh
   function checkAuth() {
     if (token.value) {
-      // In a real app, you would validate the token with the server
-      // For this demo, we'll just set a mock user based on the token
+      
       user.value = mockUsers[0] // Set as admin for demo
       return true
     }
