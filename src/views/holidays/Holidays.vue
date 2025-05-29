@@ -31,7 +31,6 @@
             <label for="tipo">Tipo de festivo:</label>
             <select id="tipo" v-model.number="form.tipo_festivo_id">
               <option disabled value="">Selecciona un tipo</option>
-              <option value="1">1</option>
               <option v-for="tipo in tiposFestivo" :key="tipo.id" :value="tipo.id">
                 {{ tipo.nombre }}
               </option>
@@ -64,7 +63,6 @@
     <label for="tipo-edit">Tipo de festivo:</label>
     <select id="tipo-edit" v-model.number="editForm.tipo_festivo_id" required>
       <option disabled value="">Selecciona un tipo</option>
-      <option value="1">1</option>
       <option v-for="t in tiposFestivo" :key="t.id" :value="t.id">{{ t.nombre }}</option>
     </select>
 
