@@ -120,6 +120,7 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, reactive, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -329,9 +330,6 @@ async function remove () {
   }
 }
 </script>
-
-
-
 
 <style scoped>
 .employee-details { 

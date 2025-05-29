@@ -158,6 +158,6 @@ const logout = () => {
 }
 .navbar {
     justify-content: flex-end;
-    gap: 6rem;
+    gap: 9.5rem;
   }
 </style>
