@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 
@@ -7,40 +7,43 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+const showSidebar = ref(true) 
+
+const toggleSidebar = () => {
+  showSidebar.value = !showSidebar.value
+}
+
+// 🔁 Forzar sidebar visible en pantallas grandes
+const handleResize = () => {
+  if (window.innerWidth > 768) {
+    showSidebar.value = true
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+  handleResize() // asegúrate de ajustar estado al montar
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+})
+
 const isAdmin = computed(() => authStore.userRole === 'admin')
 const isManager = computed(() => ['admin', 'manager'].includes(authStore.userRole))
 
 const menuItems = computed(() => {
   const items = [
-    { 
-      name: 'Dashboard', 
-      path: '/',
-    },
-    { 
-      name: 'Calendario', 
-      path: '/calendar',
-    }
+    { name: 'Dashboard', path: '/' },
+    { name: 'Calendario', path: '/calendar' }
   ]
-  
   if (isManager.value) {
-    items.push({ 
-      name: 'Trabajadores', 
-      path: '/employees',
-    })
-    
-    items.push({ 
-      name: 'Festivos', 
-      path: '/holidays',
-    })
+    items.push({ name: 'Trabajadores', path: '/employees' })
+    items.push({ name: 'Festivos', path: '/holidays' })
   }
-  
   if (isAdmin.value) {
-    items.push({ 
-      name: 'Centros de Trabajo', 
-      path: '/work-centers',
-    })
+    items.push({ name: 'Centros de Trabajo', path: '/work-centers' })
   }
-  
   return items
 })
 
@@ -49,8 +52,15 @@ const isActive = (path) => {
 }
 </script>
 
+
 <template>
-  <aside class="sidebar">
+<button class="hamburger-btn" @click="toggleSidebar">
+  <span class="hamburger-line"></span>
+  <span class="hamburger-line"></span>
+  <span class="hamburger-line"></span>
+</button>
+
+  <aside class="sidebar" v-show="showSidebar">
     <div class="sidebar-content">
       <ul class="sidebar-menu">
         <li v-for="item in menuItems" :key="item.path" 
@@ -65,6 +75,7 @@ const isActive = (path) => {
     </div>
   </aside>
 </template>
+
 
 <style>
 .sidebar {
@@ -114,30 +125,46 @@ const isActive = (path) => {
   margin-right: var(--spacing-sm);
 }
 
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 24px;
+  height: 18px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  z-index: 1001;
+  position: absolute;
+  top: 16px;
+  left: 16px;
+}
+
+.hamburger-line {
+  height: 3px;
+  width: 100%;
+  background-color: white;
+  border-radius: 2px;
+  transition: 0.3s;
+}
+
 @media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    top: 0;
-  }
-  
-  .sidebar-menu {
+  .hamburger-btn {
     display: flex;
-    overflow-x: auto;
+    margin-top: 0.5rem;
   }
-  
-  .sidebar-menu-item {
-    margin-bottom: 0;
-    white-space: nowrap;
-  }
-  
-  .sidebar-text {
-    display: none;
-  }
-  
-  .sidebar-icon {
-    margin-right: 0;
+
+  .sidebar {
+    position: absolute;
+    width: 250px;
+    top: 60px;
+    left: 0;
+    background-color: white;
+    z-index: 1000;
+    box-shadow: var(--shadow-sm);
   }
 }
+
+
 </style>

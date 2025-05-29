@@ -273,6 +273,41 @@ const form = ref({
 .btn-danger:hover {
   background-color: #b71c1c;
 }
+@media (max-width: 768px) {
+ 
+  .festivos-list ul {
+    font-size: 0.95rem;
+  }
+
+ 
+  .forms-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .card {
+    padding: 1rem;
+    max-width: 100%; 
+  }
+
+  form.form-grid {
+    gap: 0.5rem;
+  }
+
+
+  input[type="date"],
+  input[type="text"],
+  select {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+
+  .btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+  }
+}
 
   </style>
   
