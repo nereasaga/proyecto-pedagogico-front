@@ -77,7 +77,8 @@ const handleLogin = async () => {
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h1>Shift F5</h1>
+        
+        <h1><img src="@/assets/logo.png" alt="Logo" class="navbar-logo-img" />Shift F5</h1>
         <p>Sistema de Gestión de Calendarios Laborales <br> Somos F5</p>
       </div>
       
