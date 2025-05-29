@@ -227,7 +227,7 @@ async function confirmDelete(center) {
   font-size: 1.75rem;
   font-weight: bold;
   margin-bottom: 1.5rem;
-  color: #1976d2;
+  color: black
 }
 
 .titulo-seccion {

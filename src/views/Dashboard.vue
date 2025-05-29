@@ -66,6 +66,9 @@ const isEmployee = computed(() => userRole.value === 'employee')
   box-shadow: 0 6px 12px rgba(0,0,0,0.15);
 }
 
+.dashboard-text{
+  margin-top: 2rem;
+}
 
 .stat-number {
   font-size: 2.5rem;
@@ -84,6 +87,10 @@ const isEmployee = computed(() => userRole.value === 'employee')
   display: flex;
   justify-content: space-between;
   margin-bottom: var(--spacing-xs);
+}
+.calendar-icon{
+  color: var(--color-primary);
+  margin-top: 0.7rem;
 }
 
 .upcoming-list {
