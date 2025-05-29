@@ -33,7 +33,7 @@ const logout = () => {
   <nav class="navbar">
     <div class="navbar-brand">
       <router-link to="/" class="navbar-logo">
-        <span>Workforce Calendar</span>
+        <span>Shift F5</span>
       </router-link>
     </div>
     
