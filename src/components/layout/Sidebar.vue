@@ -83,8 +83,9 @@ const isActive = (path) => {
   background-color: white;
   box-shadow: var(--shadow-sm);
   position: sticky;
-  top: 60px;
+  top: 50px;
   overflow-y: auto;
+  font-size: 1.2rem;
 }
 
 .sidebar-content {
@@ -156,14 +157,14 @@ const isActive = (path) => {
 
   .sidebar {
     position: absolute;
-    width: 250px;
-    top: 60px;
+    width: 100vw; 
     left: 0;
+    top: 60px; 
     background-color: white;
     z-index: 1000;
     box-shadow: var(--shadow-sm);
+    font-size: 1.3rem;
   }
 }
-
 
 </style>

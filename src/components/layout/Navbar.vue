@@ -171,5 +171,10 @@ const logout = () => {
 .navbar {
     justify-content: flex-end;
     gap: 9.5rem;
+    
   }
+  .dropdown-item {
+   font-size: 1rem;
+  }
+
 </style>
