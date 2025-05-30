@@ -2,7 +2,7 @@
     <div class="holidays-container">
       <h1>Días Festivos</h1>
   
-      <!-- Lista de Festivos -->
+      <!-- Holkiday list -->
       <section class="card festivos-list">
         <h2>Lista de Festivos</h2>
         <ul>
