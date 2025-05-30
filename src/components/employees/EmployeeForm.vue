@@ -1,13 +1,6 @@
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { api } from '../../services/api.js'
-
-const props = defineProps({
-  initialData: {
-    type: Object,
-    default: () => ({})
-  }
-})
 
 const emit = defineEmits(['submit'])
 
@@ -17,26 +10,23 @@ const centrosTrabajo = ref([])
 const loading = ref(false)
 const error = ref(null)
 
-// Weekdays for schedules
 const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes']
 
 const formData = reactive({
-  nombre_completo: props.initialData.nombre_completo || '',
-  email: props.initialData.email || '',
+  nombre_completo: '',
+  email: '',
   password: '',
-  rol: props.initialData.rol || null,
-  centro_trabajo: props.initialData.centro_trabajo || null,
-  jornada_semanal_horas: props.initialData.jornada_semanal_horas,
-  jornada_anual_horas: props.initialData.jornada_anual_horas,
-  dias_vacaciones_asignados: props.initialData.dias_vacaciones_asignados,
-
-  horarios: props.initialData.horarios || diasSemana.map((dia, i) => ({
-  dia_semana: i + 1,        
-  hora_entrada: '',
-  hora_salida: ''
-})),
+  rol: null,
+  centro_trabajo: null,
+  jornada_semanal_horas: null,
+  jornada_anual_horas: null,
+  dias_vacaciones_asignados: null,
+  horarios: diasSemana.map((dia, i) => ({
+    dia_semana: i + 1,
+    hora_entrada: '',
+    hora_salida: ''
+  }))
 })
-
 
 onMounted(loadData)
 
@@ -72,7 +62,7 @@ const handleSubmit = () => {
 
     <div class="form-group">
       <label>Contraseña</label>
-      <input v-model="formData.password" type="password" :required="!props.initialData.id" />
+      <input v-model="formData.password" type="password" required />
     </div>
 
     <div class="form-group">
@@ -106,20 +96,16 @@ const handleSubmit = () => {
       <input v-model.number="formData.dias_vacaciones_asignados" type="number" min="0" required />
     </div>
 
-    <!-- Schedule -->
     <fieldset>
       <legend>Horarios (Lunes a Viernes)</legend>
       <div v-for="(horario, index) in formData.horarios" :key="horario.dia_semana" class="form-group horario-group">
-        <label>{{ horario.dia_semana }}</label>
+        <label>{{ diasSemana[index] }}</label>
         <input type="time" v-model="horario.hora_entrada" required />
         <input type="time" v-model="horario.hora_salida" required />
       </div>
     </fieldset>
 
-    
-    <button type="submit" class="btn btn-primary">
-      {{ props.initialData.id ? 'Actualizar' : 'Crear' }} Empleado
-    </button>
+    <button type="submit" class="btn btn-primary">Crear Empleado</button>
 
     <p v-if="error" class="text-danger mt-2">{{ error }}</p>
   </form>
@@ -182,7 +168,6 @@ const handleSubmit = () => {
   background-color: #1565C0;
 }
 
-/* Secciones adicionales para horarios y vacaciones */
 .horario-group {
   display: flex;
   align-items: center;
